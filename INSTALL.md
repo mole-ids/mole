@@ -6,15 +6,18 @@ Tested using Ubuntu 18.04.4 LTS
 Install build tools
 ===================
 
+```
 sudo apt install build-essential autoconf libtool bison flex 
+```
 
 Install recent go
 =================
 
+```
 sudo add-apt-repository ppa:longsleep/golang-backports
 sudo apt update
 sudo apt install golang-go
-
+```
 
 Install PF_RING
 ===============
