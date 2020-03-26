@@ -43,6 +43,7 @@ Load PD_RING
 
 ```
 modprobe pf_ring
+echo pf_ring | sudo tee -a /etc/modules
 ```
 
 Install Yara
