@@ -1,4 +1,4 @@
-package surevego
+package main
 
 import (
 	"strconv"

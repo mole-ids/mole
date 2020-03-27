@@ -1,9 +1,6 @@
-// sudo go run main.go -iface=enp6s0
-
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -14,9 +11,28 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pfring"
 	"github.com/hillu/go-yara"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
-type MyPacket struct {
+var (
+	iface     string
+	bpfFilter string
+	rulesDir  string
+	version   = false
+
+	// VersionNumber application version
+	VersionNumber = "v0.0.0"
+	// AppName appliction name
+	AppName = "Mole"
+	// BuildDate application compilation date
+	BuildDate = ""
+	// BuildHash git commit hash
+	BuildHash = ""
+)
+
+// MolePacket Mole internal network packet
+type MolePacket struct {
 	Proto    string
 	SrcIP    string
 	DstIP    string
@@ -25,20 +41,45 @@ type MyPacket struct {
 	Contents []byte
 }
 
-func Usage() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+func init() {
+	pflag.StringVar(&iface, "iface", iface, "Listen on interface")
+	pflag.StringVar(&rulesDir, "rulesDir", rulesDir, "Yara Rules directory")
+	pflag.StringVar(&bpfFilter, "bpf", bpfFilter, "BPF filter")
+	pflag.BoolVar(&version, "version", version, "Print version")
+	pflag.Parse()
 
-	flag.PrintDefaults()
+	viper.SetConfigName("mole")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("/etc/mole/")
+	viper.AddConfigPath(".")
+
+	viper.BindPFlags(pflag.CommandLine)
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %s \n", err.Error()))
+	}
+
+	if version {
+		fmt.Printf("%s version %s\nBuild Date: %s\nBuild Hash: %s\n", AppName, VersionNumber, BuildDate, BuildHash)
+		os.Exit(0)
+	}
+
+	if viper.GetString("iface") == "" {
+		fmt.Printf("Interfice must be defined\n")
+		os.Exit(0)
+	}
 }
 
 func main() {
+	var moleConfig Config
 
-	// TODO: print help
-	// TODO: parse optional BPFFilter
+	err := viper.Unmarshal(&moleConfig)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %s", err.Error())
+	}
 
-	uid := syscall.Getuid()
-
-	if uid != 0 {
+	if uid := syscall.Getuid(); uid != 0 {
 		fmt.Println("You need to be root to run this app!")
 		os.Exit(1)
 	}
@@ -48,39 +89,44 @@ func main() {
 		panic(err)
 	}
 
-	var ifacePtr *string
-	ifacePtr = flag.String("iface", l[0].Name, "The network device interface")
-	flag.Parse()
-	Usage()
-	fmt.Println("Listening:", *ifacePtr)
-
-	c, err := yara.NewCompiler()
-	if err != nil {
-		log.Fatalf("Failed to initialize YARA compiler: %s", err)
+	if !validInterface(l, iface) {
+		fmt.Printf("Interface %s is no valid", iface)
+		os.Exit(1)
 	}
 
-	f, err := os.Open("demo.yar")
+	fmt.Printf("Listening: %s\n", iface)
+
+	yarac, err := yara.NewCompiler()
 	if err != nil {
-		log.Fatalf("Could not open rule file %s: %s", "demo.yar", err)
-	}
-	err = c.AddFile(f, "namespace")
-	f.Close()
-	if err != nil {
-		log.Fatalf("Could not parse rule file %s: %s", "demo.yar", err)
+		log.Fatalf("Failed to initialize YARA compiler: %s", err.Error())
 	}
 
-	r, err := c.GetRules()
+	f, err := os.Open("demo.yar") // This will be replaced by Yara Rules loader
 	if err != nil {
-		log.Fatalf("Failed to compile rules: %s", err)
+		log.Fatalf("Could not open rule file %s: %s", "demo.yar", err.Error())
+	}
+	defer f.Close()
+
+	err = yarac.AddFile(f, "namespace")
+	if err != nil {
+		log.Fatalf("Could not parse rule file %s: %s", "demo.yar", err.Error())
 	}
 
-	if ring, err := pfring.NewRing(*ifacePtr, 65536, pfring.FlagPromisc); err != nil {
+	rules, err := yarac.GetRules()
+	if err != nil {
+		log.Fatalf("Failed to compile rules: %s", err.Error())
+	}
+
+	if ring, err := pfring.NewRing(iface, 65536, pfring.FlagPromisc); err != nil {
 		panic(err)
 		/*} else if err := ring.SetBPFFilter("tcp and port 80"); err != nil { // optional
 		panic(err)*/
 	} else if err := ring.Enable(); err != nil { // Must do this!, or you get no packets!
 		panic(err)
 	} else {
+		scan, err := yara.NewScanner(rules)
+		scanner := scan.SetCallback(printMatches)
+
 		packetSource := gopacket.NewPacketSource(ring, layers.LinkTypeEthernet)
 		for packet := range packetSource.Packets() {
 
@@ -91,8 +137,7 @@ func main() {
 
 			// FIXME: assemble packets
 
-			var mp MyPacket
-
+			var mp MolePacket
 			if packet.TransportLayer().LayerType() == layers.LayerTypeTCP {
 				data := packet.TransportLayer().(*layers.TCP)
 				mp.Contents = data.Contents
@@ -103,10 +148,10 @@ func main() {
 				continue
 			}
 
-			//fmt.Println(mp.Contents) // Do something with a packet here.
-
-			m, err := r.ScanMem(mp.Contents, 0, 0)
-			printMatches(m, err)
+			_, err = scanner.ScanMem(mp.Contents)
+			if err != nil {
+				// Log error o recover from it
+			}
 
 			// TODO: Create logger like eve.json
 
@@ -115,16 +160,21 @@ func main() {
 
 }
 
-func printMatches(m []yara.MatchRule, err error) {
-	if err == nil {
-		if len(m) > 0 {
-			for _, match := range m {
-				log.Printf("- [%s] %s ", match.Namespace, match.Rule)
-			}
-		} else {
-			//log.Print("no matches.")
+func printMatches(m []yara.MatchRule) {
+	if m != nil && len(m) > 0 {
+		for _, match := range m {
+			log.Printf("- [%s] %s ", match.Namespace, match.Rule)
 		}
 	} else {
-		log.Printf("error: %s.", err)
+		//log.Print("no matches.")
 	}
+}
+
+func validInterface(list []net.Interface, iface string) bool {
+	for _, l := range list {
+		if l.Name == iface {
+			return true
+		}
+	}
+	return false
 }

@@ -1,7 +1,8 @@
 
 
-Tested using Ubuntu 18.04.4 LTS
-
+Tested using:
+* Ubuntu 18.04.4 LTS
+* Debian GNU/Linux 10 (buster)
 
 Install build tools
 ===================
