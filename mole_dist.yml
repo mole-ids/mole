@@ -1,3 +1,7 @@
 iface: ens33
 rules_dir: rules
-bpf:
+rules_index: rules/index.yar
+bpf_filter: ""
+log_conf:
+    level: info
+    file: /dev/stdout
