@@ -4,7 +4,7 @@ Tested using:
 * Ubuntu 18.04.4 LTS
 * Debian GNU/Linux 10 (buster)
 
-## Run Mole
+## Run Mole
 
 When you have Mole already build or installed just run it with the `start` command and Mole will pick up the configuration from `mole.yml`. That configuration file can be placed either in `/etc/mole/` or next to the mole binary file.
 
