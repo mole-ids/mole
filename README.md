@@ -1,4 +1,4 @@
-# MOLE
+# MOLE
 
 Tested using:
 * Ubuntu 18.04.4 LTS
@@ -82,7 +82,7 @@ or if you want to build for the major platforms use the followinf command.
 make build_all
 ```
 
-## Install
+## Install
 
 ```sh
 make install
