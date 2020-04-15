@@ -1,36 +1,39 @@
-package conf
+package logger
 
 import (
 	"os"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// LoggingConfig specifies all the parameters needed for logging
-type LoggingConfig struct {
-	Level string `mapstructure:"level"`
-	File  string `mapstructure:"file"`
+type Logger struct {
+	Config *Config
+	Log    *zap.SugaredLogger
 }
 
-// ConfigureLogging will take the logging configuration and also adds
-// a few default parameters
-func ConfigureLogging(config *LoggingConfig) (logger *zap.SugaredLogger, err error) {
-	hostname, err := os.Hostname()
+func New() (log *Logger, err error) {
+	log = &Logger{}
+	log.Config, err = InitConfig()
+
 	if err != nil {
-		return
+		return nil, errors.Wrap(err, "unable to initiate logger configutation")
+	}
+
+	var hostname string
+	hostname, err = os.Hostname()
+	if err != nil {
+		hostname = "unknown"
 	}
 
 	logConfig := zap.NewProductionConfig()
 	logConfig.DisableCaller = true
 	logConfig.Development = false
 
-	// use a file if you want
-	if config.File != "" {
-		logConfig.OutputPaths = append(logConfig.OutputPaths, config.File)
-	}
+	logConfig.OutputPaths = append(logConfig.OutputPaths, log.Config.LogTo)
 
-	switch config.Level {
+	switch log.Config.LogLevel {
 	case "debug":
 		logConfig.Level.SetLevel(zap.DebugLevel)
 	case "warning":
@@ -49,6 +52,10 @@ func ConfigureLogging(config *LoggingConfig) (logger *zap.SugaredLogger, err err
 		String: hostname,
 	}
 	l, err := logConfig.Build(zap.Fields(op))
-	logger = l.Sugar()
-	return
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to build logger fields")
+	}
+	log.Log = l.Sugar()
+
+	return log, nil
 }
