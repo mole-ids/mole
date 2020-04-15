@@ -29,6 +29,9 @@ all: clean build_all install
 build:
 	go build ${LDFLAGS} -o ${BINDIR}/${BINARY}
 
+debug:
+	go build -tags=debug ${LDFLAGS} -o ${BINDIR}/${BINARY}
+
 build_all:
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build -v -o $(BINDIR)/$(BINARY)-$(GOOS)-$(GOARCH))))
@@ -41,4 +44,4 @@ clean:
 	rm -rf ${BINDIR}
 	# find ${ROOT_DIR} -name '${BINARY}[-?][a-zA-Z0-9]*[-?][a-zA-Z0-9]*' -delete
 
-.PHONY: check clean install build_all all
+.PHONY: check clean build debug install build_all all
