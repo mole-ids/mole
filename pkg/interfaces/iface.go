@@ -6,10 +6,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Interfaces is in charge to manage interfaces
 type Interfaces struct {
 	Config *Config
 }
 
+// New builds and configure the interface object
 func New() (iface *Interfaces, err error) {
 	iface = &Interfaces{}
 	iface.Config, err = InitConfig()
@@ -21,7 +23,8 @@ func New() (iface *Interfaces, err error) {
 	return iface, nil
 }
 
-func (iface *Interfaces) EnablePFRing() bool {
+// PFRingEnabled indicated whether PF Ring is enabled
+func (iface *Interfaces) PFRingEnabled() bool {
 	return iface.Config.PFRing
 }
 

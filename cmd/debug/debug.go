@@ -15,6 +15,7 @@ var debugCmd = &cobra.Command{
 	Short: "debug mode",
 }
 
+// Execute debug command entry point
 func Execute() {
 	if err := debugCmd.Execute(); err != nil {
 		log.Fatal(err)
@@ -22,6 +23,7 @@ func Execute() {
 }
 
 func init() {
+	// Debug command flags configuration
 	cobra.OnInitialize(initConfig)
 	debugCmd.PersistentFlags().BoolP("verbose", "v", false, "Make output more verbose")
 	debugCmd.PersistentFlags().StringVar(&configFile, "config", "mole.yml", "Config file")
@@ -29,6 +31,7 @@ func init() {
 }
 
 func initConfig() {
+	// Define default configuration file
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
 	} else {

@@ -1,30 +1,49 @@
 # MOLE
 
 Tested using:
+
 * Ubuntu 18.04.4 LTS
 * Debian GNU/Linux 10 (buster)
 
 ## Run Mole
 
-When you have Mole already build or installed just run it with the `start` command and Mole will pick up the configuration from `mole.yml`. That configuration file can be placed either in `/etc/mole/` or next to the mole binary file.
+When you have Mole already build or installed just run it with the `ids` command and Mole will pick up the configuration from `mole.yml`. That configuration file can be placed either in `/etc/mole/` or next to the mole binary file.
 
 In case you may have any doubts just run Mole with the help flag (`--help`) and it will return the avaliable options.
 
-## Install build tools
+## Install
+
+```sh
+make install
+```
+
+## Development
+
+### Install build tools
 
 ```sh
 sudo apt install build-essential autoconf libtool bison flex make
 ```
 
-## Install recent go
+### Install recent go
 
+#### Ubuntu
 ```sh
 sudo add-apt-repository ppa:longsleep/golang-backports
 sudo apt update
 sudo apt install golang-go
 ```
 
-## Install PF_RING
+#### Debian
+```sh
+sudo apt update
+sudo apt install golang-go
+```
+
+#### Manually
+Follow the process from https://golang.org/dl
+
+### Install PF_RING
 
 ```sh
 git clone https://github.com/ntop/PF_RING.git
@@ -42,14 +61,14 @@ echo 'export CGO_CFLAGS="-I/usr/local/pfring/include/"' >> $HOME/.bash_profile
 source $HOME/.bash_profile
 ```
 
-## Load PD_RING
+### Load PF_RING
 
 ```sh
 modprobe pf_ring
 echo pf_ring | sudo tee -a /etc/modules
 ```
 
-## Install Yara
+### Install Yara
 
 ```sh
 wget https://github.com/VirusTotal/yara/archive/v3.11.0.tar.gz -O yara.tgz
@@ -61,14 +80,7 @@ make
 sudo make install
 ```
 
-## Install Go dependencies
-
-```sh
-go get github.com/hillu/go-yara
-go get github.com/google/gopacket/pfring
-```
-
-## Build
+### Build
 
 To build Mole for your platform use the `build` make command
 
@@ -80,10 +92,4 @@ or if you want to build for the major platforms use the followinf command.
 
 ```sh
 make build_all
-```
-
-## Install
-
-```sh
-make install
 ```

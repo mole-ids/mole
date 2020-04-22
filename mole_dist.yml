@@ -8,6 +8,11 @@ engine:
 rules:
     rules_dir: ./rules
     rules_index:
+    variables:
+      $TCP:
+        - tcp
+      $HOME_NET:
+        - "10.0.0.0/8"
 
 logger:
     log_to: /dev/stdout

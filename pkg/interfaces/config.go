@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config interface internal configuration
 type Config struct {
 	IFace     string
 	PFRing    bool
@@ -19,6 +20,8 @@ func InitConfig() (*Config, error) {
 		PFRing:    viper.GetBool("interface.pf_ring"),
 		BPFfilter: viper.GetString("interface.bpf"),
 	}
+
+	// Check the minimal options
 	if config.IFace == "" {
 		return nil, fmt.Errorf("an interface name is needed")
 	}

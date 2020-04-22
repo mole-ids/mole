@@ -4,15 +4,21 @@ import (
 	"log"
 	"strings"
 
+	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+// RootCmd root command, this is the main entry point command
 var RootCmd = &cobra.Command{
-	Use:   "mole",
+	Use:   "",
 	Short: "MOLE IDS",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		logger.New()
+	},
 }
 
+// configFile configuration file
 var configFile string
 
 // Execute command entrypoint
@@ -23,13 +29,21 @@ func Execute() {
 }
 
 func init() {
+	// Root flags configuration
 	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "Make output more verbose")
 	RootCmd.PersistentFlags().StringVar(&configFile, "config", "mole.yml", "Config file")
-	viper.BindPFlags(RootCmd.Flags())
+
+	RootCmd.Flags().String("logTo", "", "Log to file")
+	RootCmd.Flags().String("logLevel", "info", "Log level")
+
+	// Bind flags to configuration file
+	viper.BindPFlag("logger.log_to", RootCmd.Flags().Lookup("logTo"))
+	viper.BindPFlag("logger.log_level", RootCmd.Flags().Lookup("logLevel"))
+
 }
 
 func initConfig() {
+	// Define default configuration file
 	if configFile != "" {
 		viper.SetConfigFile(configFile)
 	} else {
