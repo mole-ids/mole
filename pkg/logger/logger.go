@@ -1,24 +1,27 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-type Logger struct {
-	Config *Config
-	Log    *zap.SugaredLogger
-}
+// Log is the global logger for Mole
+var Log *zap.SugaredLogger
 
-func New() (log *Logger, err error) {
-	log = &Logger{}
-	log.Config, err = InitConfig()
+// Result is the logger for matches
+var Result *zap.SugaredLogger
+
+// New returns a new logger based on the configuration provided
+func New() {
+	var err error
+	config, err := InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate logger configutation")
+		fmt.Println("unable to initiate the logger")
+		return
 	}
 
 	var hostname string
@@ -28,12 +31,18 @@ func New() (log *Logger, err error) {
 	}
 
 	logConfig := zap.NewProductionConfig()
+
+	// TODO: Add this options at the configuration level
 	logConfig.DisableCaller = true
+	logConfig.DisableStacktrace = true
 	logConfig.Development = false
 
-	logConfig.OutputPaths = append(logConfig.OutputPaths, log.Config.LogTo)
+	// INPROVE: Add the posibility to add extra outputs, like stdout and syslog
+	if config.LogTo != "/dev/stdout" {
+		logConfig.OutputPaths = append(logConfig.OutputPaths, config.LogTo)
+	}
 
-	switch log.Config.LogLevel {
+	switch config.LogLevel {
 	case "debug":
 		logConfig.Level.SetLevel(zap.DebugLevel)
 	case "warning":
@@ -53,9 +62,23 @@ func New() (log *Logger, err error) {
 	}
 	l, err := logConfig.Build(zap.Fields(op))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to build logger fields")
+		fmt.Println("unable to build the logger fields")
+		return
 	}
-	log.Log = l.Sugar()
 
-	return log, nil
+	Log = l.Sugar()
+	defer Log.Sync()
+
+	// TODO: This needs to be don properly. Maybe using its own configuration
+	// variables
+	lr, err := logConfig.Build(zap.Fields(op))
+	if err != nil {
+		fmt.Println("unable to build the logger fields")
+		return
+	}
+
+	Result = lr.Sugar()
+	defer Result.Sync()
+
+	Log.Info("loger initiated successfully")
 }

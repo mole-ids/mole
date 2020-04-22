@@ -6,45 +6,80 @@ import (
 	"github.com/hillu/go-yara"
 	"github.com/pkg/errors"
 
-	"github.com/jpalanco/mole/pkg/rules"
+	"github.com/jpalanco/mole/internal/types"
+	"github.com/jpalanco/mole/internal/utils"
 )
 
+// Tree implemnts a n-ary tree for storing the decision tree
 type Tree struct {
-	Value    rules.NodeValue
+	Value    types.NodeValue
 	Parent   *Tree
 	Next     *Tree
 	Children *Tree
 }
 
-type RuleMap map[string][]yara.Rule
+// RuleMap maps between ID and a bunch of Yara rules
+type RuleMap map[string]yara.Rule
 
 var (
+	// Decicion is the decision tree
 	Decicion *Tree
 )
 
-func TreeFromRules(rulesList []yara.Rule) (rmap RuleMap, err error) {
-	rmap = make(RuleMap)
+// FromRules builds the decicion tree from scratch
+func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
+	ruleMap = make(types.RuleMapScanner)
+	middleMap := make(map[string]*yara.Compiler)
 
-	Decicion = New(rules.NewMRRoot())
+	Decicion = New(types.NewMRRoot())
 
 	for _, rule := range rulesList {
-		meta, err := rules.GetRuleMetaInfo(rule)
+		cr := yara.MustCompile(rule, map[string]interface{}{})
+		// crules should only contain one rule
+		crule := cr.GetRules()
+		yrule := crule[0]
+		meta, err := utils.GetRuleMetaInfo(yrule)
 		if err != nil {
-			return nil, errors.Errorf("unable to get metadata from rule %s", rule.Identifier())
+			return nil, errors.Errorf("unable to get metadata from yrule %s", yrule.Identifier())
 		}
-		idNode, _, err := InsertRule(Decicion, 0, rules.Keywords, meta)
+
+		idNode, _, err := insertRule(Decicion, 0, types.Keywords, meta)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to insert rule %s", rule.Identifier())
+			return nil, errors.Wrapf(err, "unable to insert rule %s", yrule.Identifier())
 		}
 
 		id := idNode.Value.GetValue()
-		rmap[id] = append(rmap[id], rule)
+
+		if val, ok := middleMap[id]; ok {
+			val.AddString(rule, types.YaraNamespace)
+		} else {
+			c, err := yara.NewCompiler()
+			if err != nil {
+				return nil, errors.New("unable to create yara compiler")
+			}
+			c.AddString(rule, types.YaraNamespace)
+			middleMap[id] = c
+		}
 	}
-	return
+
+	for k, v := range middleMap {
+		r, err := v.GetRules()
+		if err != nil {
+			return nil, errors.New("unable to rules from previous rules")
+		}
+
+		ruleMap[k], err = yara.NewScanner(r)
+		if err != nil {
+			return nil, errors.New("unable to get a new scanner")
+		}
+	}
+
+	return ruleMap, nil
 }
 
-func New(value rules.NodeValue) *Tree {
-	nValue, ok := value.(rules.NodeValue)
+// New returns a new Tree with a root node
+func New(value types.NodeValue) *Tree {
+	nValue, ok := value.(types.NodeValue)
 	if !ok {
 		fmt.Printf("Wrong type: %v\n", value)
 	}
@@ -56,62 +91,29 @@ func New(value rules.NodeValue) *Tree {
 	}
 }
 
-func getNodeByType(key string, value interface{}) (*Tree, error) {
-	switch key {
-	case "type":
-		node, err := rules.NewMRAlert(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "proto":
-		node, err := rules.NewMRProto(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "src":
-		node, err := rules.NewSRCMRAddress(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "src_port":
-		node, err := rules.NewSRCMRPort(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "dst":
-		node, err := rules.NewDSTMRAddress(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "dst_port":
-		node, err := rules.NewDSTMRPort(value)
-		if err != nil {
-			return nil, err
-		}
-		return New(node), err
-	case "id":
-		node, err := rules.NewMRid()
-		return New(node), err
+// GetNodeByType returns a node based on the type of node
+func GetNodeByType(key string, value interface{}) (*Tree, error) {
+	nv, err := types.GetNodeValue(key, value)
+	return New(nv), err
+}
+
+// InsertRule insertes Yara rule and generates an ID
+func InsertRule(lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
+	if Decicion == nil {
+		return nil, false, errors.New("decicion tree not initialized")
 	}
-	return nil, errors.Errorf("Node type %s not recognized", key)
+	return insertRule(Decicion, lvl, keys, rule)
 }
 
-func IsRoot(tree *Tree) bool {
-	return tree != nil && tree.Parent == nil && tree.Next == nil
-}
-
-func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID *Tree, ok bool, err error) {
+// insertRule does the true insert
+func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
 	if tree.Children == nil {
 		// This happens when a new branch is being built up
 
+		// Wuhile level is blow keys length we can add nodes saftly
 		if lvl < len(keys) {
 			// Getting a new node. The new node will be the new children node
-			node, err := getNodeByType(keys[lvl], rule[keys[lvl]])
+			node, err := GetNodeByType(keys[lvl], rule[keys[lvl]].GetValue())
 			if err != nil {
 				return nil, false, errors.Wrapf(err, "when creating node at level %d with key %s", lvl, keys[lvl])
 			}
@@ -121,17 +123,15 @@ func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID
 			tree.Children = node
 
 			// if level hasn't reached the max value, keep inserting nodes
-			return InsertRule(node, lvl+1, keys, rule)
-		} else {
-			// If we've reached the lastest node and it was inserted successfully,
-			// then we need to add an extra node.
-			// The extra node will be the `id` node.
-			idNode, err := getNodeByType("id", nil)
-			idNode.Parent = tree
-			tree.Children = idNode
-
-			return idNode, true, err
+			return insertRule(node, lvl+1, keys, rule)
 		}
+		// If we've reached the lastest node and it was inserted successfully,
+		// then we need to add an extra node. The extra node will be the `id` node.
+		idNode, err := GetNodeByType("id", nil)
+		idNode.Parent = tree
+		tree.Children = idNode
+
+		return idNode, true, err
 	}
 	// When there is a child is because the branch is already populated
 
@@ -144,7 +144,7 @@ func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID
 	*/
 
 	// Build a temp node, with the values of the new node
-	tmpNode, err := getNodeByType(keys[lvl], rule[keys[lvl]])
+	tmpNode, err := GetNodeByType(keys[lvl], rule[keys[lvl]].GetValue())
 	if err != nil {
 		return nil, false, err
 	}
@@ -179,7 +179,7 @@ func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID
 			// If we've reached the lastest node and it was inserted successfully,
 			// then we need to add an extra node.
 			// The extra node will be the `id` node.
-			idNode, err := getNodeByType("id", nil)
+			idNode, err := GetNodeByType("id", nil)
 			idNode.Parent = tmpNode
 			tmpNode.Children = idNode
 
@@ -187,7 +187,7 @@ func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID
 		}
 
 		// Otherwise there still are more levels
-		return InsertRule(tmpNode, lvl+1, keys, rule)
+		return insertRule(tmpNode, lvl+1, keys, rule)
 	}
 
 	// Otherwise, a jump needs to be done.
@@ -198,6 +198,27 @@ func InsertRule(tree *Tree, lvl int, keys []string, rule rules.MetaRule) (nodeID
 	}
 
 	// Finally, just jump to the next node in the branch
-	return InsertRule(current, lvl+1, keys, rule)
+	return insertRule(current, lvl+1, keys, rule)
 
+}
+
+// LookupID search through the decicion tree for a Yara rule that matches with
+// the packet metadata
+func LookupID(pkt types.MetaRule) (id string, err error) {
+	if Decicion == nil || Decicion.Children == nil {
+		return "", errors.New("decicion tree not initialized")
+	}
+
+	bt := NewBactracking(pkt)
+	if err != nil {
+		return "", errors.Wrap(err, "while looking up the rule id")
+	}
+
+	bt.Backtrack(Decicion.Children)
+
+	if bt.HasSolution() {
+		return bt.GetResult(), nil
+	}
+
+	return "", errors.New("solution not found")
 }

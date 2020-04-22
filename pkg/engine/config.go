@@ -1,5 +1,6 @@
 package engine
 
+// Config engine internal configuration
 type Config struct {
 }
 

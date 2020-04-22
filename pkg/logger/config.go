@@ -2,6 +2,7 @@ package logger
 
 import "github.com/spf13/viper"
 
+// Config logger internal configuration
 type Config struct {
 	LogTo    string
 	LogLevel string

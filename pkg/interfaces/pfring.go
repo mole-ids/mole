@@ -5,7 +5,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// PFRingInit initializes PFRing on the interface defined in the config
+// InitPFRing initializes PFRing on the interface defined in the config
 func (iface *Interfaces) InitPFRing() (ring *pfring.Ring, err error) {
 	ring, err = pfring.NewRing(iface.Config.IFace, 65536, pfring.FlagPromisc)
 	if err != nil {
@@ -20,7 +20,7 @@ func (iface *Interfaces) InitPFRing() (ring *pfring.Ring, err error) {
 	}
 
 	err = ring.Enable()
-	if err != nil { // Must do this!, or you get no packets!
+	if err != nil { // Must do this!, or you don't get packets!
 		return nil, errors.Wrap(err, "unable to enable pf_ring")
 	}
 	return ring, nil

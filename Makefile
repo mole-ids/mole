@@ -39,6 +39,8 @@ build_all:
 install:
 	go install ${LDFLAGS}
 
+test:
+	go test -v -count=1 -cover ./...
 # Remove only what we've created
 clean:
 	rm -rf ${BINDIR}

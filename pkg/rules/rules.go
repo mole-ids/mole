@@ -1,26 +1,22 @@
 package rules
 
 import (
-	"bufio"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/hillu/go-yara"
-	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 
 // Manager stores the rules and manages everything related with rules
 type Manager struct {
 	Config   *Config
-	Log      *logger.Logger
-	RawRules []yara.Rule
+	RawRules []string
 }
 
+// NewManager returns a new rules manager
 func NewManager() (manager *Manager, err error) {
 	manager = &Manager{}
 	manager.Config, err = InitConfig()
@@ -29,21 +25,20 @@ func NewManager() (manager *Manager, err error) {
 		return nil, errors.Wrap(err, "unable to initiate rules manager config")
 	}
 
-	manager.Log, _ = logger.New()
-
 	return manager, err
 }
 
 const (
-	yaraNamespace = "Mole"
-	yaraFileGlob  = "*.yar"
+	yaraFileGlob = "*.yar"
 )
 
 var (
-	varRe     = regexp.MustCompile(`(?i)\$\w+`)
-	includeRe = regexp.MustCompile(`(?i)include\s+`)
+	varRe          = regexp.MustCompile(`(?i)\$\w+`)
+	includeRe      = regexp.MustCompile(`(?i)include\s+`)
+	removeBlanksRe = regexp.MustCompile(`[\t\r\n]+`)
 )
 
+// LoadRules load the rules defined either in the rulesIndex or rulesDir flags
 func (ma *Manager) LoadRules() (err error) {
 	if ma.Config.RulesIndex == "" && ma.Config.RulesFolder == "" {
 		return errors.New("either a rule index or rule folder have to be defined")
@@ -60,65 +55,45 @@ func (ma *Manager) LoadRules() (err error) {
 	return nil
 }
 
+// LoadRulesByIndex loads the rules defined in the `idxFile`
 func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
-	yarac, err := yara.NewCompiler()
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize YARA compiler")
-	}
+	// Removing comments from the file
+	cleanIndex := string(RemoveCAndCppComments(idxFile))
+	// Removing empty lines
+	cleanIndex = removeBlanksRe.ReplaceAllString(strings.TrimSpace(cleanIndex), "\n")
 
-	ruleLines, err := fileToLines(idxFile)
-	if err != nil {
-		return errors.Wrapf(err, "could not open or read rule index file %s", ma.Config.RulesIndex)
-	}
+	lines := strings.Split(cleanIndex, "\n")
 
 	cwd, err := os.Getwd()
 	if err != nil {
 		return errors.Wrap(err, "unable to get the curresnt working directory path")
 	}
 
-	// Index file is a bunch of lines that points to Yara rules
-	// Yara rule files are relative to index file
-	for _, rline := range ruleLines {
-		// Remove include keyword and quotes (")
-		rline = cleanUpLine(rline)
-
+	for _, iline := range lines {
+		line := cleanUpLine(iline)
 		// Get the base path of the index file
 		base := filepath.Dir(idxFile)
 
 		// Get the final rule path
-		rulePath := filepath.Join(cwd, base, rline)
+		rulePath := filepath.Join(cwd, base, line)
 
 		// Read the rule content based on the rule file real file
 		ruleString, err := ioutil.ReadFile(rulePath)
-
-		// Parse rule and replate variables with its values
-		parsedRule := parseRuleAndVars(string(ruleString), ma.Config.Vars)
-
-		fmt.Println("RULE: ", parsedRule)
-		// Add rule to the compiler
-		err = yarac.AddString(parsedRule, yaraNamespace)
 		if err != nil {
-			return errors.Wrapf(err, "could not parse rule file %s", ma.Config.RulesIndex)
+			return errors.Wrapf(err, "unable to read the yara rule %s", rulePath)
 		}
+
+		ma.readRuleByRule(ruleString)
 	}
-
-	rules, err := yarac.GetRules()
-	if err != nil {
-		return errors.Wrap(err, "failed to compile rules")
-	}
-
-	r := rules.GetRules()
-
-	ma.RawRules = append(ma.RawRules, r...)
 
 	return nil
 }
 
+// LoadRulesByDir loads the rules (files *.yar) placed in `rulesFolder`
 func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
-	yarac, err := yara.NewCompiler()
-	if err != nil {
-		return errors.Wrap(err, "failed to initialize YARA compiler")
-	}
+	// TODO: This need to be redone, because rules need to be loaded one by one
+	// than means included rules needs to be parsed and processed one by one.
+	// One rule is not he file, one rule is a propper Yara rule.
 
 	files, err := loadFiles(rulesFolder)
 	if err != nil {
@@ -131,65 +106,32 @@ func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
 			return errors.Wrapf(err, "could not open rule file %s", file)
 		}
 
-		// Parse rule and replate variables with its values
-		parsedRule := parseRuleAndVars(string(ruleString), ma.Config.Vars)
-
-		// Add rule to the compiler
-		err = yarac.AddString(parsedRule, yaraNamespace)
-		if err != nil {
-			return errors.Wrapf(err, "could not parse rule file %s", file)
-		}
+		ma.readRuleByRule(ruleString)
 	}
-
-	rules, err := yarac.GetRules()
-	if err != nil {
-		return errors.Wrap(err, "failed to compile rules")
-	}
-
-	r := rules.GetRules()
-
-	ma.RawRules = append(ma.RawRules, r...)
 
 	return nil
 }
 
-func GetRuleMetaInfo(rule yara.Rule) (metarule MetaRule, err error) {
-	var ok bool
-	metarule = make(MetaRule)
-	for k, v := range rule.Metas() {
-		metarule[k], ok = v.(string)
-		if !ok {
-			return metarule, errors.New("meta value is not string")
-		}
-	}
-	return metarule, nil
+func (ma *Manager) readRuleByRule(rule []byte) {
+	// TODO: rule can have more than one Yara rule
+	// If there are more than one, it needs to be splited up
+	// so rules are managed one by one.
+	newRule := parseRuleAndVars(string(rule), ma.Config.Vars)
+	ma.RawRules = append(ma.RawRules, newRule)
 }
 
+// loadFiles loads files from path
 func loadFiles(path string) ([]string, error) {
 	return filepath.Glob(filepath.Join(path, yaraFileGlob))
 }
 
-func fileToLines(filePath string) (lines []string, err error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	// TODO: take comments into account
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	err = scanner.Err()
-	return
-}
-
+// cleanUpLine handy function for cleaning up include line from index file
 func cleanUpLine(line string) string {
 	l := includeRe.ReplaceAllString(line, "")
 	return strings.ReplaceAll(l, "\"", "")
 }
 
+// parseRuleAndVars replace valiables by its final value
 func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
 	return varRe.ReplaceAllStringFunc(rule, func(v string) string {
 		var res string = v
