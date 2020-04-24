@@ -18,12 +18,18 @@ func RemoveCppStyleComments(content []byte) []byte {
 	return cppcmt.ReplaceAll(content, []byte(""))
 }
 
-// RemoveCAndCppComments removes either C-Style or C++Style comments from
+// RemoveCAndCppCommentsFile removes either C-Style or C++Style comments from
 // a file
-func RemoveCAndCppComments(srcpath string) []byte {
+func RemoveCAndCppCommentsFile(srcpath string) []byte {
 	b, err := ioutil.ReadFile(srcpath)
 	if err != nil {
 		panic(err)
 	}
 	return RemoveCppStyleComments(RemoveCStyleComments(b))
+}
+
+// RemoveCAndCppCommentsFile removes either C-Style or C++Style comments from
+// a file
+func RemoveCAndCppComments(src string) []byte {
+	return RemoveCppStyleComments(RemoveCStyleComments([]byte(src)))
 }

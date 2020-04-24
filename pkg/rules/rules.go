@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 
@@ -25,6 +26,13 @@ func NewManager() (manager *Manager, err error) {
 		return nil, errors.Wrap(err, "unable to initiate rules manager config")
 	}
 
+	// Load rules
+	err = manager.LoadRules()
+	if err != nil {
+		return nil, errors.Wrap(err, "while loading rules")
+	}
+	logger.Log.Info("yara rules loaded successfully")
+
 	return manager, err
 }
 
@@ -36,6 +44,8 @@ var (
 	varRe          = regexp.MustCompile(`(?i)\$\w+`)
 	includeRe      = regexp.MustCompile(`(?i)include\s+`)
 	removeBlanksRe = regexp.MustCompile(`[\t\r\n]+`)
+	// splitRE        = regexp.MustCompile(`(?img)rule(?:[^\n}]|\n[^\n])+`)
+	splitRE = regexp.MustCompile(`(?im)}\s*rule`)
 )
 
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
@@ -52,13 +62,15 @@ func (ma *Manager) LoadRules() (err error) {
 		ma.LoadRulesByIndex(ma.Config.RulesFolder)
 	}
 
+	logger.Log.Infof("loaded %d rules", len(ma.RawRules))
+
 	return nil
 }
 
 // LoadRulesByIndex loads the rules defined in the `idxFile`
 func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 	// Removing comments from the file
-	cleanIndex := string(RemoveCAndCppComments(idxFile))
+	cleanIndex := string(RemoveCAndCppCommentsFile(idxFile))
 	// Removing empty lines
 	cleanIndex = removeBlanksRe.ReplaceAllString(strings.TrimSpace(cleanIndex), "\n")
 
@@ -113,11 +125,12 @@ func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
 }
 
 func (ma *Manager) readRuleByRule(rule []byte) {
-	// TODO: rule can have more than one Yara rule
-	// If there are more than one, it needs to be splited up
-	// so rules are managed one by one.
-	newRule := parseRuleAndVars(string(rule), ma.Config.Vars)
-	ma.RawRules = append(ma.RawRules, newRule)
+	rules := splitRules(string(rule))
+
+	for _, rule := range rules {
+		newRule := parseRuleAndVars(rule, ma.Config.Vars)
+		ma.RawRules = append(ma.RawRules, newRule)
+	}
 }
 
 // loadFiles loads files from path
@@ -140,4 +153,29 @@ func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
 		}
 		return res
 	})
+}
+
+func splitRules(rulesString string) []string {
+	var rules, rulesTmp []string
+	var rulesTmpString string
+
+	rulesTmpString = string(RemoveCAndCppComments(rulesString))
+
+	rules = splitRE.Split(rulesTmpString, -1)
+	if len(rules) == 1 {
+		return rules
+	}
+
+	for idx, rule := range rules {
+		if idx%2 == 0 {
+			// Add }
+			rule = rule + "}"
+		} else {
+			// Add rule
+			rule = "rule" + rule
+		}
+		rulesTmp = append(rulesTmp, rule)
+	}
+
+	return rulesTmp
 }
