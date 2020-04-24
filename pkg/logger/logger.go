@@ -1,9 +1,9 @@
 package logger
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/jpalanco/mole/internal/merr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -15,13 +15,13 @@ var Log *zap.SugaredLogger
 var Result *zap.SugaredLogger
 
 // New returns a new logger based on the configuration provided
-func New() {
-	var err error
-	config, err := InitConfig()
+func New() (err error) {
+	var config *Config
+
+	config, err = InitConfig()
 
 	if err != nil {
-		fmt.Println("unable to initiate the logger")
-		return
+		return merr.LoggerInitConfigErr
 	}
 
 	var hostname string
@@ -38,6 +38,7 @@ func New() {
 	logConfig.Development = false
 
 	// INPROVE: Add the posibility to add extra outputs, like stdout and syslog
+	// and even omit stdout
 	if config.LogTo != "/dev/stdout" {
 		logConfig.OutputPaths = append(logConfig.OutputPaths, config.LogTo)
 	}
@@ -62,8 +63,7 @@ func New() {
 	}
 	l, err := logConfig.Build(zap.Fields(op))
 	if err != nil {
-		fmt.Println("unable to build the logger fields")
-		return
+		return merr.LoggerBuildZapFieldsErr
 	}
 
 	Log = l.Sugar()
@@ -73,12 +73,13 @@ func New() {
 	// variables
 	lr, err := logConfig.Build(zap.Fields(op))
 	if err != nil {
-		fmt.Println("unable to build the logger fields")
-		return
+		return merr.LoggerBuildZapFieldsErr
 	}
 
 	Result = lr.Sugar()
 	defer Result.Sync()
 
-	Log.Info("loger initiated successfully")
+	Log.Info(LoggerInitSuccessMsg)
+
+	return nil
 }

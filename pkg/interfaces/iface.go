@@ -3,6 +3,7 @@ package interfaces
 import (
 	"net"
 
+	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 
@@ -20,6 +21,7 @@ func New() (iface *Interfaces, err error) {
 		return nil, errors.Wrap(err, "unable to initiate interfaces configutation")
 	}
 
+	logger.Log.Info("interfaces initiated successfully")
 	return iface, nil
 }
 

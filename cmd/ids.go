@@ -26,8 +26,8 @@ func init() {
 	idsCmd.Flags().String("rulesIndex", "", "Yara Rules directory")
 	idsCmd.Flags().Bool("pfring", true, "Enable PF Ring on the interface")
 	idsCmd.Flags().String("bpf", "", "BPF filter")
-	idsCmd.Flags().String("logTo", "", "Log to file")
-	idsCmd.Flags().String("logLevel", "info", "Log level")
+	// idsCmd.Flags().String("logTo", "", "Log to file")
+	// idsCmd.Flags().String("logLevel", "info", "Log level")
 	idsCmd.Flags().StringSlice("variables", []string{}, "Varaiables value used in the rules")
 
 	// Bind flags to configuration file
@@ -39,8 +39,8 @@ func init() {
 	viper.BindPFlag("rules.rules_index", idsCmd.Flags().Lookup("rulesIndex"))
 	viper.BindPFlag("rules.variables", idsCmd.Flags().Lookup("variables"))
 
-	viper.BindPFlag("logger.log_to", idsCmd.Flags().Lookup("logTo"))
-	viper.BindPFlag("logger.log_level", idsCmd.Flags().Lookup("logLevel"))
+	// viper.BindPFlag("logger.log_to", idsCmd.Flags().Lookup("logTo"))
+	// viper.BindPFlag("logger.log_level", idsCmd.Flags().Lookup("logLevel"))
 
 	// Adding ids to the main root command
 	RootCmd.AddCommand(idsCmd)
