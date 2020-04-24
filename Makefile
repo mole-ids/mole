@@ -16,6 +16,7 @@ BINDIR=build
 VERSION=1.0.0
 BUILD=`git rev-parse HEAD`
 BUILDDATE=`date +%FT%T%z`
+
 PLATFORMS=darwin linux windows
 ARCHITECTURES=386 amd64
 
@@ -41,9 +42,8 @@ install:
 
 test:
 	go test -v -count=1 -cover ./...
-# Remove only what we've created
+	
 clean:
 	rm -rf ${BINDIR}
-	# find ${ROOT_DIR} -name '${BINARY}[-?][a-zA-Z0-9]*[-?][a-zA-Z0-9]*' -delete
 
 .PHONY: check clean build debug install build_all all

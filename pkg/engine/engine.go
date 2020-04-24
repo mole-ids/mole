@@ -46,34 +46,23 @@ func New() (motor *Engine, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to initiate rules manager")
 	}
-	logger.Log.Info("rule manager initiated successfully")
-
-	// Load rules from rules manager
-	err = motor.RulesManager.LoadRules()
-	if err != nil {
-		return nil, errors.Wrap(err, "while loading rules")
-	}
-	logger.Log.Info("yara rules loaded successfully")
 
 	// Build a decicion tree and the RuleMap
 	motor.RuleMap, err = tree.FromRules(motor.RulesManager.RawRules)
 	if err != nil {
 		return nil, errors.Wrap(err, "while generating the decicion tree")
 	}
-	logger.Log.Info("rule map build successfully")
 
 	iface, err := interfaces.New()
 	if err != nil {
 		logger.Log.Fatalf("unable to initiate interfaces: %s", err.Error())
 	}
-	logger.Log.Info("interfaces initiated successfully")
 
 	if iface.PFRingEnabled() {
 		motor.ring, err = iface.InitPFRing()
 		if err != nil {
 			logger.Log.Fatalf("unable to configure PF Ring: %s", err.Error())
 		}
-		logger.Log.Info("pf_ring initiated successfully")
 	}
 
 	return motor, err
@@ -140,6 +129,7 @@ func (motor *Engine) Start() {
 			logger.Log.Errorf("while reading package at layer %d", pkt.ErrorLayer().LayerType)
 			continue
 		}
+
 		netLink := pkt.NetworkLayer()
 		if netLink != nil && inProtos(netLink.LayerType(), netProtos) {
 			payload, err = extractMetaFrom("network", pkt, meta)

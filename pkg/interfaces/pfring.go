@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"github.com/google/gopacket/pfring"
+	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 
@@ -23,5 +24,7 @@ func (iface *Interfaces) InitPFRing() (ring *pfring.Ring, err error) {
 	if err != nil { // Must do this!, or you don't get packets!
 		return nil, errors.Wrap(err, "unable to enable pf_ring")
 	}
+
+	logger.Log.Info("pf_ring initiated successfully")
 	return ring, nil
 }

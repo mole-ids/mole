@@ -8,6 +8,7 @@ import (
 
 	"github.com/jpalanco/mole/internal/types"
 	"github.com/jpalanco/mole/internal/utils"
+	"github.com/jpalanco/mole/pkg/logger"
 )
 
 // Tree implemnts a n-ary tree for storing the decision tree
@@ -74,6 +75,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		}
 	}
 
+	logger.Log.Info("rule map build successfully")
 	return ruleMap, nil
 }
 
