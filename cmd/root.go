@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -14,7 +15,10 @@ var RootCmd = &cobra.Command{
 	Use:   "",
 	Short: "MOLE IDS",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		logger.New()
+		err := logger.New()
+		if err != nil {
+			fmt.Printf("Err: %s\n", err.Error())
+		}
 	},
 }
 
@@ -33,12 +37,12 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVar(&configFile, "config", "mole.yml", "Config file")
 
-	RootCmd.Flags().String("logTo", "", "Log to file")
-	RootCmd.Flags().String("logLevel", "info", "Log level")
+	RootCmd.PersistentFlags().String("logTo", "", "Log to file")
+	RootCmd.PersistentFlags().String("logLevel", "info", "Log level")
 
 	// Bind flags to configuration file
-	viper.BindPFlag("logger.log_to", RootCmd.Flags().Lookup("logTo"))
-	viper.BindPFlag("logger.log_level", RootCmd.Flags().Lookup("logLevel"))
+	viper.BindPFlag("logger.log_to", RootCmd.PersistentFlags().Lookup("logTo"))
+	viper.BindPFlag("logger.log_level", RootCmd.PersistentFlags().Lookup("logLevel"))
 
 }
 
