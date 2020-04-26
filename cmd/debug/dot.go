@@ -40,7 +40,7 @@ func runDotCmd(cmd *cobra.Command, args []string) {
 	_, _ = tree.FromRules(rm.RawRules)
 
 	g := dot.NewGraph(dot.Directed)
-	transverse(g, tree.Decicion, 0)
+	transverse(g, tree.Decision, 0)
 
 	graph := g.String()
 	fmt.Println(graph)

@@ -2,7 +2,6 @@ package rules
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -13,7 +12,10 @@ import (
 
 // Manager stores the rules and manages everything related with rules
 type Manager struct {
-	Config   *Config
+	// Config manger's configuration most of its values come from the arguments
+	// or configuration file
+	Config *Config
+	// RawRules store all Yara rules
 	RawRules []string
 }
 
@@ -31,7 +33,20 @@ func NewManager() (manager *Manager, err error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "while loading rules")
 	}
+
 	logger.Log.Info("yara rules loaded successfully")
+
+	return manager, err
+}
+
+// NewManagerCustom returns a new rules manager
+func NewManagerCustom() (manager *Manager, err error) {
+	manager = &Manager{}
+	manager.Config, err = InitConfig()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to initiate rules manager config")
+	}
 
 	return manager, err
 }
@@ -42,10 +57,16 @@ const (
 
 var (
 	varRe          = regexp.MustCompile(`(?i)\$\w+`)
-	includeRe      = regexp.MustCompile(`(?i)include\s+`)
+	includeRe      = regexp.MustCompile(`(?i)\s*include\s+`)
 	removeBlanksRe = regexp.MustCompile(`[\t\r\n]+`)
 	// splitRE        = regexp.MustCompile(`(?img)rule(?:[^\n}]|\n[^\n])+`)
 	splitRE = regexp.MustCompile(`(?im)}\s*rule`)
+
+	// the following regexp are used to pre-procces the rules
+	srcAnyPreprocRE     = regexp.MustCompile(`src\s*=\s*"any"`)
+	srcPortAnyPreprocRE = regexp.MustCompile(`src_port\s*=\s*"any"`)
+	dstAnyPreprocRE     = regexp.MustCompile(`dst\s*=\s*"any"`)
+	dstPortAnyPreprocRE = regexp.MustCompile(`dst_port\s*=\s*"any"`)
 )
 
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
@@ -59,7 +80,7 @@ func (ma *Manager) LoadRules() (err error) {
 	}
 
 	if ma.Config.RulesFolder != "" {
-		ma.LoadRulesByIndex(ma.Config.RulesFolder)
+		ma.LoadRulesByDir(ma.Config.RulesFolder)
 	}
 
 	logger.Log.Infof("loaded %d rules", len(ma.RawRules))
@@ -76,18 +97,20 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 
 	lines := strings.Split(cleanIndex, "\n")
 
-	cwd, err := os.Getwd()
+	// Get the base path of the index file
+	base := filepath.Dir(idxFile)
+	// Get the absolute path for the index file from its base path
+	absBase, err := filepath.Abs(base)
+
 	if err != nil {
-		return errors.Wrap(err, "unable to get the curresnt working directory path")
+		return errors.Wrapf(err, "unable to get the absolute path for index file %s", idxFile)
 	}
 
 	for _, iline := range lines {
 		line := cleanUpLine(iline)
-		// Get the base path of the index file
-		base := filepath.Dir(idxFile)
 
 		// Get the final rule path
-		rulePath := filepath.Join(cwd, base, line)
+		rulePath := filepath.Join(absBase, line)
 
 		// Read the rule content based on the rule file real file
 		ruleString, err := ioutil.ReadFile(rulePath)
@@ -103,10 +126,6 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 
 // LoadRulesByDir loads the rules (files *.yar) placed in `rulesFolder`
 func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
-	// TODO: This need to be redone, because rules need to be loaded one by one
-	// than means included rules needs to be parsed and processed one by one.
-	// One rule is not he file, one rule is a propper Yara rule.
-
 	files, err := loadFiles(rulesFolder)
 	if err != nil {
 		return errors.Wrap(err, "could not open rules directory")
@@ -131,51 +150,4 @@ func (ma *Manager) readRuleByRule(rule []byte) {
 		newRule := parseRuleAndVars(rule, ma.Config.Vars)
 		ma.RawRules = append(ma.RawRules, newRule)
 	}
-}
-
-// loadFiles loads files from path
-func loadFiles(path string) ([]string, error) {
-	return filepath.Glob(filepath.Join(path, yaraFileGlob))
-}
-
-// cleanUpLine handy function for cleaning up include line from index file
-func cleanUpLine(line string) string {
-	l := includeRe.ReplaceAllString(line, "")
-	return strings.ReplaceAll(l, "\"", "")
-}
-
-// parseRuleAndVars replace valiables by its final value
-func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
-	return varRe.ReplaceAllStringFunc(rule, func(v string) string {
-		var res string = v
-		if val, ok := vars[strings.ToLower(v)]; ok {
-			res = strings.Join(val, ",")
-		}
-		return res
-	})
-}
-
-func splitRules(rulesString string) []string {
-	var rules, rulesTmp []string
-	var rulesTmpString string
-
-	rulesTmpString = string(RemoveCAndCppComments(rulesString))
-
-	rules = splitRE.Split(rulesTmpString, -1)
-	if len(rules) == 1 {
-		return rules
-	}
-
-	for idx, rule := range rules {
-		if idx%2 == 0 {
-			// Add }
-			rule = rule + "}"
-		} else {
-			// Add rule
-			rule = "rule" + rule
-		}
-		rulesTmp = append(rulesTmp, rule)
-	}
-
-	return rulesTmp
 }
