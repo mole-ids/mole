@@ -18,15 +18,23 @@ import (
 
 // Engine is in charge to handle the mole core functionalities
 type Engine struct {
-	Config       *Config
+	// Config engine's configuration most of its values come from the arguments
+	// or configuration file
+	Config *Config
+	// RulesManager handles everything related with rules
 	RulesManager *rules.Manager
-	RuleMap      types.RuleMapScanner
-	ring         *pfring.Ring
+	// RuleMap used to fire Yara rules based on the identifier token return by
+	// the look up query
+	RuleMap types.RuleMapScanner
+	// ring used for sniff packages from pf_ring
+	ring *pfring.Ring
 }
 
 var (
+	// netProtos network protocols allowed in mole
 	netProtos = []gopacket.LayerType{layers.LayerTypeIPv4}
 
+	// transProtos transport protocols allowed in mole
 	transProtos = []gopacket.LayerType{layers.LayerTypeTCP,
 		layers.LayerTypeUDP}
 )
@@ -47,17 +55,19 @@ func New() (motor *Engine, err error) {
 		return nil, errors.Wrap(err, "unable to initiate rules manager")
 	}
 
-	// Build a decicion tree and the RuleMap
+	// Build a Decision tree and the RuleMap
 	motor.RuleMap, err = tree.FromRules(motor.RulesManager.RawRules)
 	if err != nil {
-		return nil, errors.Wrap(err, "while generating the decicion tree")
+		return nil, errors.Wrap(err, "while generating the Decision tree")
 	}
 
+	// Initialize interfaces
 	iface, err := interfaces.New()
 	if err != nil {
 		logger.Log.Fatalf("unable to initiate interfaces: %s", err.Error())
 	}
 
+	// Enable pf_ring if requested
 	if iface.PFRingEnabled() {
 		motor.ring, err = iface.InitPFRing()
 		if err != nil {
@@ -65,26 +75,34 @@ func New() (motor *Engine, err error) {
 		}
 	}
 
+	logger.Log.Info("mole engine initiated successfully")
+
 	return motor, err
 }
 
 // FireRules finds the set of rules that will be used to analyze the network packet
 func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
+	// Look for a matching rule set based on paket metadata
 	id, err := tree.LookupID(meta)
 	if err != nil {
 		logger.Log.Infof("unable to find yara rule for %v", meta)
-		logger.Log.Debugf("unable to find yara rule for %v", meta)
 		return
 	}
 
+	// If there is a match, then execute the Yara rules associated
 	if scanner, found := motor.RuleMap[id]; found {
+
 		matches, err := scanner.ScanMem(data.Payload())
 		if err != nil {
 			logger.Log.Errorf("error while scanning payload: %s", err.Error())
 			return
 		}
 
+		// matches are the results from the scan
 		for _, match := range matches {
+			// This is where mole is logging the resutls
+			// TODO: This is a PoC at the moment, this needs a complete
+			// rewrite
 			var meta, strs string
 			for k, vi := range match.Meta {
 				v := vi.(string)
@@ -123,13 +141,21 @@ func (motor *Engine) Start() {
 	var meta types.MetaRule
 	meta = make(types.MetaRule)
 
+	// Start sniffing packages
+	// TODO: Take into account when pf_ring is not enable or another method is
+	// in used
 	packetSource := gopacket.NewPacketSource(motor.ring, layers.LinkTypeEthernet)
 	for pkt := range packetSource.Packets() {
+		// Checking for network errors
 		if err := pkt.ErrorLayer(); err != nil {
 			logger.Log.Errorf("while reading package at layer %d", pkt.ErrorLayer().LayerType)
 			continue
 		}
 
+		// Extract data from network layer.
+		// First check whether the packet belongs to the layer
+		// Second validate if the layer type or protocol is one of
+		// the mole allowed protocols
 		netLink := pkt.NetworkLayer()
 		if netLink != nil && inProtos(netLink.LayerType(), netProtos) {
 			payload, err = extractMetaFrom("network", pkt, meta)
@@ -138,6 +164,10 @@ func (motor *Engine) Start() {
 			}
 		}
 
+		// Extract data from transport layer
+		// First check whether the packet belongs to the layer
+		// Second validate if the layer type or protocol is one of
+		// the mole allowed protocols
 		transportLink := pkt.TransportLayer()
 		if transportLink != nil && inProtos(transportLink.LayerType(), transProtos) {
 			payload, err = extractMetaFrom("transport", pkt, meta)
@@ -146,15 +176,18 @@ func (motor *Engine) Start() {
 			}
 		}
 
+		// if there is an error, just continue
 		if err != nil {
 			continue
 		}
 
+		// Once metadata was extracted a decision neets to be taken
 		logger.Log.Infof("extracted from network packet: %v", meta)
 		motor.FireRules(meta, payload)
 	}
 }
 
+// transProtos extract metadata from the packet
 func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payload gopacket.Payload, err error) {
 	switch typ {
 	// case "network":
@@ -186,10 +219,13 @@ func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payl
 		var tcp layers.TCP
 		var udp layers.UDP
 		var payload gopacket.Payload
+
+		// Decode package
 		parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip4, &tcp, &udp, &payload)
 		decodedLayers := make([]gopacket.LayerType, 0, 10)
-
 		err = parser.DecodeLayers(pkt.Data(), &decodedLayers)
+
+		// Porcess each layer and get the metadata from each one
 		for _, typ := range decodedLayers {
 			switch typ {
 			case layers.LayerTypeEthernet:
@@ -233,6 +269,7 @@ func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payl
 				continue
 			}
 		}
+		// TODO: handle fragmented packages
 		// if decodedLayers.Truncated {
 		// 	fmt.Println("  Packet has been truncated")
 		// }
@@ -242,5 +279,6 @@ func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payl
 
 		return payload, nil
 	}
+
 	return payload, errors.Errorf("type %s not recognized", typ)
 }

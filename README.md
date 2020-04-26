@@ -28,6 +28,7 @@ sudo apt install build-essential autoconf libtool bison flex make
 ### Install recent go
 
 #### Ubuntu
+
 ```sh
 sudo add-apt-repository ppa:longsleep/golang-backports
 sudo apt update
@@ -35,6 +36,7 @@ sudo apt install golang-go
 ```
 
 #### Debian
+
 ```sh
 sudo apt update
 sudo apt install golang-go

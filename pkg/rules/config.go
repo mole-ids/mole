@@ -6,9 +6,12 @@ import (
 
 // Config rules internal configuration
 type Config struct {
-	RulesIndex  string
+	// RulesIndex path to a Yara rule index
+	RulesIndex string
+	// RulesFolder path to a directory with a set of Yara rules
 	RulesFolder string
-	Vars        map[string][]string
+	// Vars vaiables used for overwriting values in the Yara rules meta section
+	Vars map[string][]string
 }
 
 // InitConfig initializes rules package

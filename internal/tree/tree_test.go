@@ -58,11 +58,11 @@ func getDummyData2() []types.MetaRule {
 
 func TestFindInsert(t *testing.T) {
 
-	Decicion = New(types.NewMRRoot())
+	Decision = New(types.NewMRRoot())
 
 	for _, rule := range getDummyData() {
 		lvl := 0
-		node, ok, err := insertRule(Decicion, lvl, types.Keywords, rule)
+		node, ok, err := insertRule(Decision, lvl, types.Keywords, rule)
 		if node == nil {
 			t.Error("Expecting node, but a nil was found")
 		}
@@ -80,7 +80,7 @@ func TestFindInsert(t *testing.T) {
 
 func TestLookupIDNotInit(t *testing.T) {
 	// Avoid any previous initialization
-	Decicion = nil
+	Decision = nil
 
 	data := getDummyData()
 	id, err := LookupID(data[0])
@@ -101,11 +101,11 @@ func TestLookupID(t *testing.T) {
 	var err error
 
 	data := getDummyData()
-	Decicion = New(types.NewMRRoot())
+	Decision = New(types.NewMRRoot())
 
 	for _, rule := range data {
 		lvl := 0
-		idNode, _, _ = insertRule(Decicion, lvl, types.Keywords, rule)
+		idNode, _, _ = insertRule(Decision, lvl, types.Keywords, rule)
 
 		id = idNode.Value.GetValue()
 		ids = append(ids, id)
@@ -129,10 +129,10 @@ func TestLookupIDNotFound(t *testing.T) {
 
 	rulesMeta := getDummyData()
 
-	Decicion = New(types.NewMRRoot())
+	Decision = New(types.NewMRRoot())
 
 	lvl := 0
-	_, _, _ = insertRule(Decicion, lvl, types.Keywords, rulesMeta[0])
+	_, _, _ = insertRule(Decision, lvl, types.Keywords, rulesMeta[0])
 
 	id, err = LookupID(rulesMeta[1])
 
