@@ -13,44 +13,63 @@ import (
 
 // Tree implemnts a n-ary tree for storing the decision tree
 type Tree struct {
-	Value    types.NodeValue
-	Parent   *Tree
-	Next     *Tree
+	// Value is the node's value
+	Value types.NodeValue
+	// Parent points to the parent node
+	Parent *Tree
+	// Next points to the next node in the same lavel
+	Next *Tree
+	// Children point to the child node and so the next level in the tree
 	Children *Tree
 }
 
 // RuleMap maps between ID and a bunch of Yara rules
-type RuleMap map[string]yara.Rule
+// type RuleMap map[string]yara.Rule
 
 var (
-	// Decicion is the decision tree
-	Decicion *Tree
+	// Decision is the decision tree
+	Decision *Tree
 )
 
-// FromRules builds the decicion tree from scratch
+// FromRules builds the Decision tree from scratch and returns types.RuleMapScanner
+// which is a map that define what Yara rule set execute for each id
 func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
+	// initialize the result map
 	ruleMap = make(types.RuleMapScanner)
+	// used as a middleware for extracting ara rule Metadata. These rules are
+	// not used for anything else
 	middleMap := make(map[string]*yara.Compiler)
 
-	Decicion = New(types.NewMRRoot())
+	// Initialize the decision tree
+	Decision = New(types.NewMRRoot())
 
+	// Loop though the whole list of rules
 	for _, rule := range rulesList {
+		// compile each rule
 		cr := yara.MustCompile(rule, map[string]interface{}{})
+
 		// crules should only contain one rule
 		crule := cr.GetRules()
 		yrule := crule[0]
+
+		// Extracting rule metadata
 		meta, err := utils.GetRuleMetaInfo(yrule)
 		if err != nil {
 			return nil, errors.Errorf("unable to get metadata from yrule %s", yrule.Identifier())
 		}
 
-		idNode, _, err := insertRule(Decicion, 0, types.Keywords, meta)
+		// Insert the node according to its metadata
+		idNode, _, err := insertRule(Decision, 0, types.Keywords, meta)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to insert rule %s", yrule.Identifier())
 		}
 
+		// If there is not error, then get the identifier
 		id := idNode.Value.GetValue()
 
+		// Build a middleware map. This constructs a Yara compiler for each
+		// map entry, this way it is easy to add rules to the compiler or
+		// rule set based on the id.
 		if val, ok := middleMap[id]; ok {
 			val.AddString(rule, types.YaraNamespace)
 		} else {
@@ -63,6 +82,8 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		}
 	}
 
+	// The compiler does not allow to scan so a scanner needs to be used insted.
+	// So the ruleMap has a Yara scanner with the rules for each id.
 	for k, v := range middleMap {
 		r, err := v.GetRules()
 		if err != nil {
@@ -101,10 +122,10 @@ func GetNodeByType(key string, value interface{}) (*Tree, error) {
 
 // InsertRule insertes Yara rule and generates an ID
 func InsertRule(lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
-	if Decicion == nil {
-		return nil, false, errors.New("decicion tree not initialized")
+	if Decision == nil {
+		return nil, false, errors.New("Decision tree not initialized")
 	}
-	return insertRule(Decicion, lvl, keys, rule)
+	return insertRule(Decision, lvl, keys, rule)
 }
 
 // insertRule does the true insert
@@ -204,23 +225,28 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 
 }
 
-// LookupID search through the decicion tree for a Yara rule that matches with
+// LookupID search through the Decision tree for a Yara rule that matches with
 // the packet metadata
 func LookupID(pkt types.MetaRule) (id string, err error) {
-	if Decicion == nil || Decicion.Children == nil {
-		return "", errors.New("decicion tree not initialized")
+	// The Decision tree must be initialized before procced
+	if Decision == nil || Decision.Children == nil {
+		return "", errors.New("Decision tree not initialized")
 	}
 
+	// Initiate a backtracking search the the target
 	bt := NewBactracking(pkt)
 	if err != nil {
 		return "", errors.Wrap(err, "while looking up the rule id")
 	}
 
-	bt.Backtrack(Decicion.Children)
+	// Start the search omiting the root node as it is only an empty node
+	bt.Backtrack(Decision.Children)
 
+	// If finally there is a solution, just returned it
 	if bt.HasSolution() {
 		return bt.GetResult(), nil
 	}
 
+	// Otherwise, rise an error
 	return "", errors.New("solution not found")
 }

@@ -4,7 +4,9 @@ import "github.com/spf13/viper"
 
 // Config logger internal configuration
 type Config struct {
-	LogTo    string
+	// LogTo where the logger will write to
+	LogTo string
+	// LogLevel logger level. This can take info, error, warning, and debug
 	LogLevel string
 }
 

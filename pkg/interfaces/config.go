@@ -8,8 +8,11 @@ import (
 
 // Config interface internal configuration
 type Config struct {
-	IFace     string
-	PFRing    bool
+	// IFace interface to bind to
+	IFace string
+	// PFRing enable pf_ring
+	PFRing bool
+	// BPFfilter BPF filter
 	BPFfilter string
 }
 

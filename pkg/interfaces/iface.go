@@ -9,6 +9,8 @@ import (
 
 // Interfaces is in charge to manage interfaces
 type Interfaces struct {
+	// Config interface's configuration most of its values come from the arguments
+	// or configuration file
 	Config *Config
 }
 
