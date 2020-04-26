@@ -57,6 +57,7 @@ func initConfig() {
 		viper.AddConfigPath("/etc/mole")
 	}
 
+	// Read configuration from environment variables
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 

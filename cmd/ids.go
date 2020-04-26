@@ -26,8 +26,6 @@ func init() {
 	idsCmd.Flags().String("rulesIndex", "", "Yara Rules directory")
 	idsCmd.Flags().Bool("pfring", true, "Enable PF Ring on the interface")
 	idsCmd.Flags().String("bpf", "", "BPF filter")
-	// idsCmd.Flags().String("logTo", "", "Log to file")
-	// idsCmd.Flags().String("logLevel", "info", "Log level")
 	idsCmd.Flags().StringSlice("variables", []string{}, "Varaiables value used in the rules")
 
 	// Bind flags to configuration file
@@ -39,8 +37,9 @@ func init() {
 	viper.BindPFlag("rules.rules_index", idsCmd.Flags().Lookup("rulesIndex"))
 	viper.BindPFlag("rules.variables", idsCmd.Flags().Lookup("variables"))
 
-	// viper.BindPFlag("logger.log_to", idsCmd.Flags().Lookup("logTo"))
-	// viper.BindPFlag("logger.log_level", idsCmd.Flags().Lookup("logLevel"))
+	// Bind persistent flags from root command
+	viper.BindPFlag("logger.log_to", RootCmd.PersistentFlags().Lookup("logTo"))
+	viper.BindPFlag("logger.log_level", RootCmd.PersistentFlags().Lookup("logLevel"))
 
 	// Adding ids to the main root command
 	RootCmd.AddCommand(idsCmd)
@@ -51,12 +50,11 @@ func runIdsCmd(cmd *cobra.Command, args []string) {
 	// Ensure user is root
 	ensureRoot()
 
+	// Start mole engine
 	motor, err := engine.New()
 	if err != nil {
 		logger.Log.Fatalf("unable to initiate yara engine: %s", err.Error())
 	}
-
-	logger.Log.Info("mole engine initiated successfully")
 
 	motor.Start()
 }
