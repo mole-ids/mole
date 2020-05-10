@@ -52,9 +52,9 @@ echo pf_ring | sudo tee -a /etc/modules
 ## Install Yara
 
 ```sh
-wget https://github.com/VirusTotal/yara/archive/v3.11.0.tar.gz -O yara.tgz
+wget https://codeload.github.com/VirusTotal/yara/tar.gz/v4.0.0 -O yara.tgz
 tar xvfz yara.tgz
-cd yara-3.11.0
+cd yara-4.0.0
 ./bootstrap.sh
 ./configure
 make
