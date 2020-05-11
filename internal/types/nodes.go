@@ -3,9 +3,12 @@ package types
 import (
 	"math/rand"
 	"net"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/jpalanco/mole/internal/utils"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 )
@@ -36,40 +39,6 @@ func (mr MRRoot) GetKey() string {
 // GetValue is a dummy function that needs to be implemented in terms to
 // acomplish the NodeValue interface
 func (mr MRRoot) GetValue() string {
-	return mr.Value
-}
-
-// MRType represents Type node
-type MRType struct {
-	Key   string
-	Value string
-}
-
-// NewMRType returns a new type node
-func NewMRType(value interface{}) (MRType, error) {
-	var err error
-	sValue, ok := value.(string)
-	if !ok {
-		err = errors.New("creating type node: value is not a type of string")
-	}
-	return MRType{
-		Key:   "type",
-		Value: sValue,
-	}, err
-}
-
-// Match checks whether the argument's value match with the node value
-func (mr MRType) Match(typ NodeValue) bool {
-	return mr.Value == typ.GetValue()
-}
-
-// GetKey returns the key associated to the node which is also part of the keywords
-func (mr MRType) GetKey() string {
-	return mr.Key
-}
-
-// GetValue returns a string version of the node value
-func (mr MRType) GetValue() string {
 	return mr.Value
 }
 
@@ -180,8 +149,14 @@ func (mr MRAddress) GetValue() string {
 
 // MRPort represents proto node
 type MRPort struct {
-	Key   string
-	Value string
+	Range    bool
+	Low      int
+	High     int
+	List     bool
+	PortList []int
+	Key      string
+	Value    int
+	Original string
 }
 
 // NewSRCMRPort returns a new MRPort node with `src_port` as key
@@ -194,29 +169,184 @@ func NewDSTMRPort(value interface{}) (MRPort, error) {
 	return newMRPort("dst_port", value)
 }
 
-func newMRPort(key string, value interface{}) (MRPort, error) {
-	var err error
+func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 	sValue, ok := value.(string)
 	if !ok {
-		err = errors.New("creating port nodo: value is not a type of string")
+		return mrport, errors.New("creating port nodo: value is not a type of string")
 	}
-	return MRPort{
-		Key:   key,
-		Value: sValue,
-	}, err
+
+	var rng, lst bool
+	var ports [2]int
+	var portList []int
+	var iValue int
+	if strings.Contains(sValue, RangeSplitter) {
+		if strings.Contains(sValue, SequenceSplitter) {
+			return mrport, errors.New("mixed range types are not allowed")
+		}
+
+		if strings.Count(sValue, RangeSplitter) > 1 {
+			return mrport, errors.New("port range can not contain more than one range splitter")
+		}
+
+		portsString := strings.Split(sValue, RangeSplitter)
+
+		if portsString[0] == "" {
+			portsString[0] = "0"
+		}
+
+		if portsString[1] == "" {
+			portsString[1] = "65535"
+		}
+
+		ports[0], err = strconv.Atoi(portsString[0])
+		if err != nil {
+			return mrport, errors.Errorf("value %s is not valid port number", portsString[0])
+		}
+		ports[1], err = strconv.Atoi(portsString[1])
+		if err != nil {
+			return mrport, errors.Errorf("value %s is not valid port number", portsString[1])
+		}
+
+		if ports[0] >= ports[1] {
+			return mrport, errors.New("lower port cannot be higher or equal to the higher port in port range")
+		}
+
+		rng = true
+	} else if strings.Contains(sValue, SequenceSplitter) {
+		if strings.Contains(sValue, RangeSplitter) {
+			return mrport, errors.New("mixed range types are not allowed")
+		}
+
+		for _, vs := range strings.Split(sValue, SequenceSplitter) {
+			if vs != "" {
+				v, err := strconv.Atoi(vs)
+				if err != nil {
+					return mrport, errors.Errorf("value %s is not valid port number", vs)
+				}
+				portList = append(portList, v)
+			}
+		}
+		sort.Ints(portList)
+		lst = true
+	} else {
+		iValue, err = strconv.Atoi(sValue)
+		if err != nil {
+			return mrport, errors.Errorf("value %s is not valid port number", sValue)
+		}
+	}
+
+	mrport = MRPort{
+		Range:    rng,
+		Low:      ports[0],
+		High:     ports[1],
+		List:     lst,
+		PortList: portList,
+		Key:      key,
+		Value:    iValue,
+		Original: sValue,
+	}
+
+	return mrport, err
+}
+
+// IsList returns the port range
+func (mr MRPort) IsList() bool {
+	return mr.List
+}
+
+// GetList returns the list values
+func (mr MRPort) GetList() []int {
+	if mr.List {
+		return mr.PortList
+	}
+	return []int{}
+}
+
+// IsRange returns the port range
+func (mr MRPort) IsRange() bool {
+	return mr.Range
+}
+
+// GetRange returns the port range
+func (mr MRPort) GetRange() (int, int) {
+	if mr.Range {
+		return mr.Low, mr.High
+	}
+	return -1, -1
 }
 
 // Match checks whether the argument's value match with the node value
 func (mr MRPort) Match(port NodeValue) bool {
-	if strings.Contains(mr.Value, RangeSplit) {
-		ports := strings.Split(mr.Value, RangeSplit)
-		portValue := port.GetValue()
-		if portValue >= ports[0] && portValue <= ports[1] {
+	vPort := port.(MRPort)
+
+	if vPort.IsRange() {
+		low, high := vPort.GetRange()
+
+		if mr.Range {
+			if low >= mr.Low && high <= mr.High {
+				return true
+			}
+
+			return false
+		}
+
+		if mr.List {
+			for p := low; p <= high; p++ {
+				if !utils.InInts(p, mr.PortList) {
+					return false
+				}
+			}
 			return true
 		}
+
+		return mr.Value >= low && mr.Value <= high
+
+	} else if vPort.IsList() {
+		list := vPort.GetList()
+
+		if mr.Range {
+			for _, p := range list {
+				if p < mr.Low && p > mr.High {
+					return false
+				}
+			}
+			return true
+		}
+
+		if mr.List {
+			sort.Ints(list)
+
+			for _, p := range list {
+				if !utils.InInts(p, mr.PortList) {
+					return false
+				}
+			}
+			return true
+		}
+
+		for _, p := range list {
+			if p == mr.Value {
+				return true
+			}
+		}
+		return false
 	}
 
-	return mr.Value == port.GetValue()
+	v, _ := strconv.Atoi(vPort.GetValue())
+
+	if mr.Range {
+		return v >= mr.Low && v <= mr.High
+
+	} else if mr.IsList() {
+		for _, p := range mr.PortList {
+			if p == v {
+				return true
+			}
+		}
+		return false
+	}
+
+	return mr.Value == v
 }
 
 // GetKey returns the key associated to the node which is also part of the keywords
@@ -226,7 +356,7 @@ func (mr MRPort) GetKey() string {
 
 // GetValue returns a string version of the node value
 func (mr MRPort) GetValue() string {
-	return mr.Value
+	return mr.Original
 }
 
 // MRid represents proto node
@@ -263,12 +393,6 @@ func (mr MRid) GetValue() string {
 // GetNodeValue returns the NodeValue based on the key value
 func GetNodeValue(key string, value interface{}) (NodeValue, error) {
 	switch key {
-	case "type":
-		node, err := NewMRType(value)
-		if err != nil {
-			return nil, err
-		}
-		return node, err
 	case "proto":
 		node, err := NewMRProto(value)
 		if err != nil {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hillu/go-yara"
+	"github.com/jpalanco/mole/internal/types"
 	"github.com/spf13/viper"
 )
 
@@ -399,6 +401,59 @@ func Test_splitRules(t *testing.T) {
 		res := splitRules(tc.Rules)
 		if len(res) != len(tc.Result) {
 			t.Errorf("%d - Expecting %d rules, but found %d", idx, len(tc.Result), len(res))
+		}
+	}
+}
+
+func TestGetRuleMetaInfo(t *testing.T) {
+	testCase := []*struct {
+		Rule   string
+		YRule  yara.Rule
+		Result types.MetaRule
+		Err    error
+	}{{
+		Rule: `rule T1 {
+meta:
+	proto = "tcp"
+	src = "1.1.1.1"
+	src_port = "12345"
+	dst = "1.1.1.1"
+	dst_port = "12345"
+strings:
+	$a = "a"
+condition:
+	$a
+}`,
+		Result: make(types.MetaRule),
+		Err:    nil,
+	}}
+
+	for _, tc := range testCase {
+		yc, err := yara.NewCompiler()
+		if err != nil {
+			t.Errorf("Unexpected error when getting Yara Compiler. Err: %s", err.Error())
+		}
+
+		yc.AddString(tc.Rule, "test")
+		yrs, _ := yc.GetRules()
+		yr := yrs.GetRules()
+		tc.YRule = yr[0]
+	}
+
+	for _, tc := range testCase {
+		res, err := GetRuleMetaInfo(tc.YRule)
+		if err != tc.Err {
+			t.Errorf("Unexpected, found error %s, but wanted %s", err.Error(), tc.Err.Error())
+		}
+
+		if len(res) != len(types.Keywords) {
+			t.Errorf("Expecting result to have %d keys, but found %d", len(types.Keywords), len(res))
+		}
+
+		for _, k := range types.Keywords {
+			if _, ok := res[k]; !ok {
+				t.Errorf("Meta key not found, %s", k)
+			}
 		}
 	}
 }

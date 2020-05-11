@@ -9,6 +9,8 @@ var (
 	// this will be handy to version rules later on
 	RuleDefVersion = "1.0"
 
-	// RangeSplit character used to define a range, like ports 80:443
-	RangeSplit = ":"
+	// RangeSplitter character used to define a range, like ports 80:443
+	RangeSplitter = ":"
+	// SequenceSplitter character used to define a sequence, like ports 80,443
+	SequenceSplitter = ","
 )
