@@ -7,8 +7,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/jpalanco/mole/internal/types"
-	"github.com/jpalanco/mole/internal/utils"
 	"github.com/jpalanco/mole/pkg/logger"
+	"github.com/jpalanco/mole/pkg/rules"
 )
 
 // Tree implemnts a n-ary tree for storing the decision tree
@@ -53,7 +53,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		yrule := crule[0]
 
 		// Extracting rule metadata
-		meta, err := utils.GetRuleMetaInfo(yrule)
+		meta, err := rules.GetRuleMetaInfo(yrule)
 		if err != nil {
 			return nil, errors.Errorf("unable to get metadata from yrule %s", yrule.Identifier())
 		}

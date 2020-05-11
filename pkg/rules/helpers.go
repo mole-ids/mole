@@ -5,6 +5,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/hillu/go-yara"
+	"github.com/jpalanco/mole/internal/types"
+	"github.com/jpalanco/mole/internal/utils"
+	"github.com/pkg/errors"
 )
 
 // RemoveCStyleComments removes C-Style comments from a byte arry
@@ -34,6 +39,20 @@ func RemoveCAndCppCommentsFile(srcpath string) []byte {
 // a file
 func RemoveCAndCppComments(src string) []byte {
 	return RemoveCppStyleComments(RemoveCStyleComments([]byte(src)))
+}
+
+// GetRuleMetaInfo returns the rule metadata
+func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
+	metarule = make(types.MetaRule)
+	for _, meta := range rule.MetaList() {
+		if utils.InStrings(meta.Identifier, types.Keywords) {
+			metarule[meta.Identifier], err = types.GetNodeValue(meta.Identifier, meta.Value)
+			if err != nil {
+				return metarule, errors.Wrap(err, "while building rule metadata")
+			}
+		}
+	}
+	return metarule, nil
 }
 
 // loadFiles loads files from path
