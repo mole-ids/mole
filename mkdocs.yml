@@ -1,0 +1,44 @@
+site_name: MOLE NIDS
+site_description: MOLE Network Intrusion Detection System
+site_author: mole.io
+site_url: https://docs.mole.io
+dev_addr: 0.0.0.0:8000
+
+repo_name: 'mole'
+repo_url: 'https://github.com/jpalanco/mole'
+
+docs_dir: 'docs'
+
+theme:
+  name: 'material'
+  custom_dir: 'docs/theme'
+  language: en
+  include_sidebar: true
+  favicon: img/mole_reducida.png
+  logo: img/mole.png
+  palette:
+    primary: 'blue'
+    accent: 'light blue'
+  feature:
+    tabs: false
+  palette:
+    primary: 'cyan'
+    accent: 'cyan'
+  i18n:
+    prev: 'Previous'
+    next: 'Next'
+
+copyright: "Copyright &copy; 2020 Mole"
+
+extra_css:
+  - theme/styles/extra.css
+  - theme/styles/atom-one-light.css
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+
+# Page tree
+pages:
+  - Getting Started: index.md
