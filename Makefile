@@ -42,8 +42,11 @@ install:
 
 test:
 	go test -v -count=1 -cover ./...
-	
+
+docs:
+	make -C ./docs docs
+
 clean:
 	rm -rf ${BINDIR}
 
-.PHONY: check clean build debug install build_all all
+.PHONY: check clean build debug install build_all all docs

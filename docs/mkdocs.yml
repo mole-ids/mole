@@ -1,0 +1,80 @@
+site_name: MOLE NIDS
+site_description: MOLE Documentation
+site_author: mole.io
+site_url: https://docs.mole.io
+dev_addr: localhost:8000
+
+repo_name: 'GitHub'
+repo_url: 'https://github.com/jpalanco/mole'
+
+docs_dir: 'content'
+
+theme:
+  name: 'material'
+  custom_dir: 'theme'
+  language: en
+  include_sidebar: true
+  favicon: assets/img/mole.icon.png
+  logo: assets/img/mole.logo.png
+  feature:
+    tabs: false
+  palette:
+    primary: 'teal'
+    accent: 'teal'
+  i18n:
+    prev: 'Previous'
+    next: 'Next'
+
+copyright: "Copyright &copy; 2020 Mole"
+
+# google_analytics:
+#   - 'UA-'
+#   - 'docs.mole.io'
+
+extra_css:
+  - assets/styles/extra.css # Our custom styles
+  - assets/styles/atom-one-light.css # HightlightJS's CSS theme
+
+extra_javascript:
+  - assets/js/hljs/highlight.pack.js # Download from https://highlightjs.org/download/ and enable YAML, TOML and Dockerfile
+  - assets/js/extra.js
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - exclude:
+      glob:
+        - "**/include-*.md"
+
+markdown_extensions:
+  - attr_list
+  - admonition
+  - footnotes
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.highlight:
+      use_pygments: false # hljs is used instead of pygment for TOML highlighting support
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+  - pymdownx.tasklist
+  - pymdownx.snippets:
+      check_paths: true
+#  - markdown_include.include:
+#      base_path: content/includes/
+#      encoding: utf-8
+  - toc:
+      permalink: true
+
+
+# Page tree
+nav:
+  - 'Welcome': 'index.md'
+  - 'Getting Started':
+    - 'Concepts' : 'getting-started/concepts.md'
+    - 'Quick Start': 'getting-started/quick-start.md'
+    - 'Configuration Introduction': 'getting-started/configuration-overview.md'
+    - 'Install Mole': 'getting-started/install-mole.md'

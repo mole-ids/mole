@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jpalanco/mole/internal/merr"
 	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -25,16 +26,16 @@ func NewManager() (manager *Manager, err error) {
 	manager.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate rules manager config")
+		return nil, errors.Wrap(err, merr.InitRulesManagerMsg)
 	}
 
 	// Load rules
 	err = manager.LoadRules()
 	if err != nil {
-		return nil, errors.Wrap(err, "while loading rules")
+		return nil, errors.Wrap(err, merr.LoadingRulesMsg)
 	}
 
-	logger.Log.Info("yara rules loaded successfully")
+	logger.Log.Info(logger.YaraRulesInitiatedMsg)
 
 	return manager, err
 }
@@ -45,7 +46,7 @@ func NewManagerCustom() (manager *Manager, err error) {
 	manager.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate rules manager config")
+		return nil, errors.Wrap(err, merr.InitRulesManagerMsg)
 	}
 
 	return manager, err
@@ -72,7 +73,7 @@ var (
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
 func (ma *Manager) LoadRules() (err error) {
 	if ma.Config.RulesIndex == "" && ma.Config.RulesFolder == "" {
-		return errors.New("either a rule index or rule folder have to be defined")
+		return merr.RuleOrIndexNotDefinedErr
 	}
 
 	if ma.Config.RulesIndex != "" {
@@ -83,7 +84,7 @@ func (ma *Manager) LoadRules() (err error) {
 		ma.LoadRulesByDir(ma.Config.RulesFolder)
 	}
 
-	logger.Log.Infof("loaded %d rules", len(ma.RawRules))
+	logger.Log.Infof(logger.YaraRulesLoadedMsg, len(ma.RawRules))
 
 	return nil
 }
@@ -103,7 +104,7 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 	absBase, err := filepath.Abs(base)
 
 	if err != nil {
-		return errors.Wrapf(err, "unable to get the absolute path for index file %s", idxFile)
+		return errors.Wrapf(err, merr.AbsIndexPathMsg, idxFile)
 	}
 
 	for _, iline := range lines {
@@ -115,7 +116,7 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 		// Read the rule content based on the rule file real file
 		ruleString, err := ioutil.ReadFile(rulePath)
 		if err != nil {
-			return errors.Wrapf(err, "unable to read the yara rule %s", rulePath)
+			return errors.Wrapf(err, merr.YaraReadFileMsg, rulePath)
 		}
 
 		ma.readRuleByRule(ruleString)
@@ -128,13 +129,13 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
 	files, err := loadFiles(rulesFolder)
 	if err != nil {
-		return errors.Wrap(err, "could not open rules directory")
+		return errors.Wrap(err, merr.OpenRulesDirMsg)
 	}
 
 	for _, file := range files {
 		ruleString, err := ioutil.ReadFile(file)
 		if err != nil {
-			return errors.Wrapf(err, "could not open rule file %s", file)
+			return errors.Wrapf(err, merr.OpenRuleFilesMsg, file)
 		}
 
 		ma.readRuleByRule(ruleString)
