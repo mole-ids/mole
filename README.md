@@ -66,7 +66,7 @@ source $HOME/.bash_profile
 ### Load PF_RING
 
 ```sh
-modprobe pf_ring
+sudo modprobe pf_ring
 echo pf_ring | sudo tee -a /etc/modules
 ```
 

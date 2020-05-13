@@ -9,6 +9,7 @@ import (
 	"github.com/google/gopacket/pfring"
 	"github.com/pkg/errors"
 
+	"github.com/jpalanco/mole/internal/merr"
 	"github.com/jpalanco/mole/internal/tree"
 	"github.com/jpalanco/mole/internal/types"
 	"github.com/jpalanco/mole/pkg/interfaces"
@@ -64,18 +65,18 @@ func New() (motor *Engine, err error) {
 	// Initialize interfaces
 	iface, err := interfaces.New()
 	if err != nil {
-		logger.Log.Fatalf("unable to initiate interfaces: %s", err.Error())
+		logger.Log.Fatalf(logger.UnableInitInterfaceMsg, err.Error())
 	}
 
 	// Enable pf_ring if requested
 	if iface.PFRingEnabled() {
 		motor.ring, err = iface.InitPFRing()
 		if err != nil {
-			logger.Log.Fatalf("unable to configure PF Ring: %s", err.Error())
+			logger.Log.Fatalf(merr.PFRingConfigErr, err.Error())
 		}
 	}
 
-	logger.Log.Info("mole engine initiated successfully")
+	logger.Log.Info(logger.MoleInitiatedMsg)
 
 	return motor, err
 }
@@ -85,7 +86,7 @@ func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
 	// Look for a matching rule set based on paket metadata
 	id, err := tree.LookupID(meta)
 	if err != nil {
-		logger.Log.Infof("unable to find yara rule for %v", meta)
+		logger.Log.Infof(merr.YaraRuleNotFoundMsg, meta)
 		return
 	}
 
@@ -94,7 +95,7 @@ func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
 
 		matches, err := scanner.ScanMem(data.Payload())
 		if err != nil {
-			logger.Log.Errorf("error while scanning payload: %s", err.Error())
+			logger.Log.Errorf(logger.YaraScannerFaildMsg, err.Error())
 			return
 		}
 
@@ -148,7 +149,7 @@ func (motor *Engine) Start() {
 	for pkt := range packetSource.Packets() {
 		// Checking for network errors
 		if err := pkt.ErrorLayer(); err != nil {
-			logger.Log.Errorf("while reading package at layer %d", pkt.ErrorLayer().LayerType)
+			logger.Log.Errorf(logger.ErrorProcessingLayerMsg, pkt.ErrorLayer().LayerType)
 			continue
 		}
 
@@ -182,7 +183,7 @@ func (motor *Engine) Start() {
 		}
 
 		// Once metadata was extracted a decision neets to be taken
-		logger.Log.Infof("extracted from network packet: %v", meta)
+		logger.Log.Infof(logger.MetadataExtractedMsg, meta)
 		motor.FireRules(meta, payload)
 	}
 }
@@ -274,11 +275,11 @@ func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payl
 		// 	fmt.Println("  Packet has been truncated")
 		// }
 		if err != nil {
-			return payload, errors.Wrap(err, "while decoding packet")
+			return payload, errors.Wrap(err, merr.WhileDecodingPaketMsg)
 		}
 
 		return payload, nil
 	}
 
-	return payload, errors.Errorf("type %s not recognized", typ)
+	return payload, errors.Errorf(merr.UnkownPaketTypeMsg, typ)
 }

@@ -3,6 +3,7 @@ package interfaces
 import (
 	"net"
 
+	"github.com/jpalanco/mole/internal/merr"
 	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -20,10 +21,10 @@ func New() (iface *Interfaces, err error) {
 	iface.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate interfaces configutation")
+		return nil, errors.Wrap(err, merr.InterfaceInitFailedMsg)
 	}
 
-	logger.Log.Info("interfaces initiated successfully")
+	logger.Log.Info(logger.InterfacesInitiatedMsg)
 	return iface, nil
 }
 
@@ -37,7 +38,7 @@ func validateIface(interfaceName string) (ok bool, err error) {
 	ok = false
 	inets, err := net.Interfaces()
 	if err != nil {
-		return ok, errors.Wrap(err, "unable to list system interfaces")
+		return ok, errors.Wrap(err, merr.InterfacesListFailesMsg)
 	}
 
 	for _, inet := range inets {

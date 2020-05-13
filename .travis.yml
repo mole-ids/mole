@@ -1,0 +1,68 @@
+sudo: required
+
+git:
+  depth: false
+
+services:
+  - docker
+
+language: go
+os: linux
+
+env:
+  global:
+    - STRUCTOR_VERSION=v1.10.0
+
+install:
+  - sudo apt-get -qq update
+  - sudo apt-get -y install build-essential autoconf libtool bison flex make
+  - ./script/install_pfring.sh
+  - ./script/install_yara.sh
+
+before_script:
+  - go mod download
+
+script:
+  - make test
+
+before_deploy:
+  - >
+    if [ x$TRAVIS_TAG != x"" ]; then
+      echo "Building binaries";
+      make build_all
+      cd build
+      for f in $(ls *); do
+        sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt"
+      done
+      cd -
+    fi
+  - >
+    echo "Download documentation generator";
+    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+  - >
+    echo "Build documentation";
+    sudo "$GOPATH/bin/structor" -o jpalanco -r mole \
+            --force-edit-url \
+            --dockerfile-url="https://raw.githubusercontent.com/jpalanco/mole/master/docs/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/jpalanco/mole/master/docs/theme/structor-menu.js.gotmpl" \
+            --exp-branch=master --debug;
+          sudo chown -R $UID site;
+
+deploy:
+  - provider: releases
+    api_key: ${GITHUB_TOKEN}
+    file: build/mole*
+    skip_cleanup: true
+    file_glob: true
+    on:
+      repo: jpalanco/mole
+      tags: true
+
+  - provider: pages
+    edge: false
+    github_token: ${GITHUB_TOKEN}
+    local_dir: site
+    skip_cleanup: true
+    on:
+      repo: jpalanco/mole
+      all_branches: true

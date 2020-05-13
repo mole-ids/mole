@@ -1,11 +1,10 @@
 package tree
 
 import (
-	"fmt"
-
 	"github.com/hillu/go-yara"
 	"github.com/pkg/errors"
 
+	"github.com/jpalanco/mole/internal/merr"
 	"github.com/jpalanco/mole/internal/types"
 	"github.com/jpalanco/mole/pkg/logger"
 	"github.com/jpalanco/mole/pkg/rules"
@@ -55,13 +54,13 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		// Extracting rule metadata
 		meta, err := rules.GetRuleMetaInfo(yrule)
 		if err != nil {
-			return nil, errors.Errorf("unable to get metadata from yrule %s", yrule.Identifier())
+			return nil, errors.Errorf(merr.YaraRuleMetadataMsg, yrule.Identifier())
 		}
 
 		// Insert the node according to its metadata
 		idNode, _, err := insertRule(Decision, 0, types.Keywords, meta)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to insert rule %s", yrule.Identifier())
+			return nil, errors.Wrapf(err, merr.InsertYaraMsg, yrule.Identifier())
 		}
 
 		// If there is not error, then get the identifier
@@ -75,7 +74,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		} else {
 			c, err := yara.NewCompiler()
 			if err != nil {
-				return nil, errors.New("unable to create yara compiler")
+				return nil, merr.YaraCompilerErr
 			}
 			c.AddString(rule, types.YaraNamespace)
 			middleMap[id] = c
@@ -87,25 +86,24 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 	for k, v := range middleMap {
 		r, err := v.GetRules()
 		if err != nil {
-			return nil, errors.New("unable to rules from previous rules")
+			return nil, merr.NoPreviousYaraRulesErr
 		}
 
 		ruleMap[k], err = yara.NewScanner(r)
 		if err != nil {
-			return nil, errors.New("unable to get a new scanner")
+			return nil, merr.YaraNewScannerErr
 		}
 	}
 
-	logger.Log.Info("rule map build successfully")
+	logger.Log.Info(logger.RuleMapBuiltMsg)
 	return ruleMap, nil
 }
 
 // New returns a new Tree with a root node
 func New(value types.NodeValue) *Tree {
-	nValue, ok := value.(types.NodeValue)
-	if !ok {
-		fmt.Printf("Wrong type: %v\n", value)
-	}
+	// TODO: control the error when casting
+	nValue := value.(types.NodeValue)
+
 	return &Tree{
 		Value:    nValue,
 		Parent:   nil,
@@ -123,7 +121,7 @@ func GetNodeByType(key string, value interface{}) (*Tree, error) {
 // InsertRule insertes Yara rule and generates an ID
 func InsertRule(lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
 	if Decision == nil {
-		return nil, false, errors.New("Decision tree not initialized")
+		return nil, false, merr.DecisionTreeNotInitErr
 	}
 	return insertRule(Decision, lvl, keys, rule)
 }
@@ -138,7 +136,7 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 			// Getting a new node. The new node will be the new children node
 			node, err := GetNodeByType(keys[lvl], rule[keys[lvl]].GetValue())
 			if err != nil {
-				return nil, false, errors.Wrapf(err, "when creating node at level %d with key %s", lvl, keys[lvl])
+				return nil, false, errors.Wrapf(err, merr.CreateTreeNodeAtLevelMsg, lvl, keys[lvl])
 			}
 
 			// Setting up the node with pointers
@@ -230,14 +228,11 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 func LookupID(pkt types.MetaRule) (id string, err error) {
 	// The Decision tree must be initialized before procced
 	if Decision == nil || Decision.Children == nil {
-		return "", errors.New("Decision tree not initialized")
+		return "", merr.DecisionTreeNotInitErr
 	}
 
 	// Initiate a backtracking search the the target
 	bt := NewBactracking(pkt)
-	if err != nil {
-		return "", errors.Wrap(err, "while looking up the rule id")
-	}
 
 	// Start the search omiting the root node as it is only an empty node
 	bt.Backtrack(Decision.Children)
@@ -248,5 +243,5 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 	}
 
 	// Otherwise, rise an error
-	return "", errors.New("solution not found")
+	return "", merr.SolutionNotFoundErr
 }
