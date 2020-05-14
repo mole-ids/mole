@@ -32,22 +32,23 @@ before_deploy:
   - >
     if [ x$TRAVIS_TAG != x"" ]; then
       echo "Building binaries";
-      make build_all
-      cd build
+      make build_all;
+      cd build;
       for f in $(ls *); do
-        sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt"
-      done
+        sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt";
+      done;
       cd -
-    fi
+    fi;
+  - >
     echo "Download documentation generator";
-    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION};
     echo "Build documentation";
     "$GOPATH/bin/structor" -o mole-ids -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --debug;
-          chown -R $UID site;
+    chown -R $UID site;
 
 deploy:
   - provider: releases
