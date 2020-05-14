@@ -3,7 +3,7 @@
 package main
 
 import (
-	"github.com/jpalanco/mole/cmd"
+	"github.com/mole-ids/mole/cmd"
 )
 
 func main() {

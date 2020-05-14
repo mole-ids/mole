@@ -4,10 +4,10 @@ import (
 	"github.com/hillu/go-yara"
 	"github.com/pkg/errors"
 
-	"github.com/jpalanco/mole/internal/merr"
-	"github.com/jpalanco/mole/internal/types"
-	"github.com/jpalanco/mole/pkg/logger"
-	"github.com/jpalanco/mole/pkg/rules"
+	"github.com/mole-ids/mole/internal/merr"
+	"github.com/mole-ids/mole/internal/types"
+	"github.com/mole-ids/mole/pkg/logger"
+	"github.com/mole-ids/mole/pkg/rules"
 )
 
 // Tree implemnts a n-ary tree for storing the decision tree

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/hillu/go-yara"
-	"github.com/jpalanco/mole/internal/types"
+	"github.com/mole-ids/mole/internal/types"
 	"github.com/spf13/viper"
 )
 

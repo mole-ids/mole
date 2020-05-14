@@ -36,15 +36,15 @@ before_deploy:
       done
       cd -
     fi
-  - >
+
     echo "Download documentation generator";
     curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
-  - >
+    
     echo "Build documentation";
     sudo "$GOPATH/bin/structor" -o jpalanco -r mole \
             --force-edit-url \
-            --dockerfile-url="https://raw.githubusercontent.com/jpalanco/mole/master/docs/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/jpalanco/mole/master/docs/theme/structor-menu.js.gotmpl" \
+            --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --debug;
           sudo chown -R $UID site;
 
@@ -55,7 +55,7 @@ deploy:
     skip_cleanup: true
     file_glob: true
     on:
-      repo: jpalanco/mole
+      repo: mole-ids/mole
       tags: true
 
   - provider: pages
@@ -64,5 +64,5 @@ deploy:
     local_dir: site
     skip_cleanup: true
     on:
-      repo: jpalanco/mole
+      repo: mole-ids/mole
       all_branches: true

@@ -2,7 +2,7 @@
 
 package main
 
-import "github.com/jpalanco/mole/cmd/debug"
+import "github.com/mole-ids/mole/cmd/debug"
 
 func main() {
 	debug.Execute()

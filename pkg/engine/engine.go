@@ -9,12 +9,12 @@ import (
 	"github.com/google/gopacket/pfring"
 	"github.com/pkg/errors"
 
-	"github.com/jpalanco/mole/internal/merr"
-	"github.com/jpalanco/mole/internal/tree"
-	"github.com/jpalanco/mole/internal/types"
-	"github.com/jpalanco/mole/pkg/interfaces"
-	"github.com/jpalanco/mole/pkg/logger"
-	"github.com/jpalanco/mole/pkg/rules"
+	"github.com/mole-ids/mole/internal/merr"
+	"github.com/mole-ids/mole/internal/tree"
+	"github.com/mole-ids/mole/internal/types"
+	"github.com/mole-ids/mole/pkg/interfaces"
+	"github.com/mole-ids/mole/pkg/logger"
+	"github.com/mole-ids/mole/pkg/rules"
 )
 
 // Engine is in charge to handle the mole core functionalities

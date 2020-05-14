@@ -1,7 +1,7 @@
 package tree
 
 import (
-	"github.com/jpalanco/mole/internal/types"
+	"github.com/mole-ids/mole/internal/types"
 )
 
 // Bactracking implements the backtracking search
