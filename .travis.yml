@@ -1,4 +1,5 @@
-sudo: required
+language: go
+os: linux
 
 git:
   depth: false
@@ -6,16 +7,13 @@ git:
 services:
   - docker
 
-language: go
-os: linux
-
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
 
 install:
-  - sudo apt-get -qq update
-  - sudo apt-get -y install build-essential autoconf libtool bison flex make
+  - apt-get -qq update
+  - apt-get -y install build-essential autoconf libtool bison flex make
   - ./script/install_pfring.sh
   - ./script/install_yara.sh
 
@@ -41,18 +39,17 @@ before_deploy:
     curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
     
     echo "Build documentation";
-    sudo "$GOPATH/bin/structor" -o jpalanco -r mole \
+    "$GOPATH/bin/structor" -o jpalanco -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --debug;
-          sudo chown -R $UID site;
+          chown -R $UID site;
 
 deploy:
   - provider: releases
     api_key: ${GITHUB_TOKEN}
     file: build/mole*
-    skip_cleanup: true
     file_glob: true
     on:
       repo: mole-ids/mole
@@ -62,7 +59,6 @@ deploy:
     edge: false
     github_token: ${GITHUB_TOKEN}
     local_dir: site
-    skip_cleanup: true
     on:
       repo: mole-ids/mole
       all_branches: true
