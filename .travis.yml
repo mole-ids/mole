@@ -17,9 +17,9 @@ env:
 
 install:
   - sudo -E apt-get -yq update
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install build-essential autoconf libtool bison flex make libmagic-dev libssl-dev libpcap-dev
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install build-essential autoconf libtool bison flex make libmagic-dev libssl-dev libpcap-dev
   - chown -R $UID ./script && chmod -R +x ./script
-  - sudo -E ./script/install_pfring.sh
+  - sudo -E ./script/travis_setup.sh
   - sudo -E ./script/install_yara.sh
 
 before_script:
