@@ -1,7 +1,25 @@
-iface: ens33
-rules_dir: rules
-rules_index: rules/index.yar
-bpf_filter: ""
-log_conf:
-    level: info
-    file: /dev/stdout
+interface:
+    iface: ens33
+    pf_ring: true
+    bpf:
+
+engine:
+
+rules:
+    rules_dir: ./rules
+    rules_index:
+    variables:
+      $TCP:
+        - tcp
+      $HOME_NET:
+        - "10.0.0.0/8"
+
+logger:
+    log_to: /dev/stdout
+    log_level: "info"
+
+debug:
+  dot:
+    output: stdout
+    rules_dir: ./rules
+    rules_index:

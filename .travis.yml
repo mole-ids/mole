@@ -1,0 +1,68 @@
+language: go
+os: linux
+
+go:
+  - 1.14.x
+
+git:
+  depth: false
+
+services:
+  - docker
+
+env:
+  global:
+    - STRUCTOR_VERSION=v1.10.0
+    - GO111MODULE=on
+
+install:
+  - sudo -E apt-get -yq update
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install build-essential autoconf libtool bison flex make libmagic-dev libssl-dev libpcap-dev
+  - chown -R $UID ./script && chmod -R +x ./script
+  - sudo -E ./script/travis_setup.sh
+  - sudo -E ./script/install_yara.sh
+
+before_script:
+  - go mod download
+
+script:
+  - make test
+
+before_deploy:
+  - >
+    if [ x$TRAVIS_TAG != x"" ]; then
+      echo "Building binaries";
+      make build_all;
+      cd build;
+      for f in $(ls *); do
+        sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt";
+      done;
+      cd -
+    fi;
+  - >
+    echo "Download documentation generator";
+    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION};
+    echo "Build documentation";
+    "$GOPATH/bin/structor" -o mole-ids -r mole \
+            --force-edit-url \
+            --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
+            --exp-branch=master --debug;
+    chown -R $UID site;
+
+deploy:
+  - provider: releases
+    api_key: ${GITHUB_TOKEN}
+    file: build/mole*
+    file_glob: true
+    on:
+      repo: mole-ids/mole
+      tags: true
+
+  - provider: pages
+    edge: false
+    github_token: ${GITHUB_TOKEN}
+    local_dir: site
+    on:
+      repo: mole-ids/mole
+      all_branches: true
