@@ -1,6 +1,9 @@
 language: go
 os: linux
 
+go:
+  - 1.14.x
+
 git:
   depth: false
 
@@ -10,10 +13,11 @@ services:
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
+    - GO111MODULE=on
 
 install:
-  - apt-get -qq update
-  - apt-get -y install build-essential autoconf libtool bison flex make
+  - sudo -E apt-get -yq update
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install build-essential autoconf libtool bison flex make
   - ./script/install_pfring.sh
   - ./script/install_yara.sh
 
@@ -34,12 +38,10 @@ before_deploy:
       done
       cd -
     fi
-
     echo "Download documentation generator";
     curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
-    
     echo "Build documentation";
-    "$GOPATH/bin/structor" -o jpalanco -r mole \
+    "$GOPATH/bin/structor" -o mole-ids -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
