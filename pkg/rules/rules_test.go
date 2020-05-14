@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jpalanco/mole/pkg/logger"
+	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/spf13/viper"
 )
 

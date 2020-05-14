@@ -3,8 +3,8 @@ package interfaces
 import (
 	"net"
 
-	"github.com/jpalanco/mole/internal/merr"
-	"github.com/jpalanco/mole/pkg/logger"
+	"github.com/mole-ids/mole/internal/merr"
+	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 

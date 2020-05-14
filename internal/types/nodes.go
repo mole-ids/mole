@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jpalanco/mole/internal/utils"
+	"github.com/mole-ids/mole/internal/utils"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
 )

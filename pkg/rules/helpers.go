@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/hillu/go-yara"
-	"github.com/jpalanco/mole/internal/types"
-	"github.com/jpalanco/mole/internal/utils"
+	"github.com/mole-ids/mole/internal/types"
+	"github.com/mole-ids/mole/internal/utils"
 	"github.com/pkg/errors"
 )
 

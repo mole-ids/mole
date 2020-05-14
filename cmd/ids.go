@@ -3,8 +3,8 @@ package cmd
 import (
 	"syscall"
 
-	"github.com/jpalanco/mole/pkg/engine"
-	"github.com/jpalanco/mole/pkg/logger"
+	"github.com/mole-ids/mole/pkg/engine"
+	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -3,7 +3,7 @@ package tree
 import (
 	"testing"
 
-	"github.com/jpalanco/mole/internal/types"
+	"github.com/mole-ids/mole/internal/types"
 )
 
 func getDummyData() []types.MetaRule {

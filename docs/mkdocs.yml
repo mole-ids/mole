@@ -1,11 +1,11 @@
 site_name: MOLE NIDS
 site_description: MOLE Documentation
-site_author: mole.io
-site_url: https://docs.mole.io
+site_author: mole-ids.org
+site_url: https://docs.mole-ids.org
 dev_addr: localhost:8000
 
 repo_name: 'GitHub'
-repo_url: 'https://github.com/jpalanco/mole'
+repo_url: 'https://github.com/mole-ids/mole'
 
 docs_dir: 'content'
 
@@ -25,11 +25,11 @@ theme:
     prev: 'Previous'
     next: 'Next'
 
-copyright: "Copyright &copy; 2020 Mole"
+copyright: "Copyright &copy; 2020 Mole-IDS"
 
 # google_analytics:
 #   - 'UA-'
-#   - 'docs.mole.io'
+#   - 'docs.mole-ids.org'
 
 extra_css:
   - assets/styles/extra.css # Our custom styles

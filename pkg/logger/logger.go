@@ -3,7 +3,7 @@ package logger
 import (
 	"os"
 
-	"github.com/jpalanco/mole/internal/merr"
+	"github.com/mole-ids/mole/internal/merr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

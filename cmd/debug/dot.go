@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 
 	"github.com/emicklei/dot"
-	"github.com/jpalanco/mole/internal/tree"
-	"github.com/jpalanco/mole/pkg/rules"
+	"github.com/mole-ids/mole/internal/tree"
+	"github.com/mole-ids/mole/pkg/rules"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
