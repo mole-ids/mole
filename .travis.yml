@@ -17,9 +17,9 @@ env:
 
 install:
   - sudo -E apt-get -yq update
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install build-essential autoconf libtool bison flex make
-  - ./script/install_pfring.sh
-  - ./script/install_yara.sh
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --force-yes install build-essential autoconf libtool bison flex make libmagic-dev libssl-dev
+  - sudo -E ./script/install_pfring.sh
+  - sudo -E ./script/install_yara.sh
 
 before_script:
   - go mod download
