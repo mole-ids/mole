@@ -11,7 +11,11 @@ cd yara-$YARA_VERSION
 
 ./bootstrap.sh
 ./configure --enable-magic --with-crypto
+
 make
 sudo make install
+
+sudo sh -c 'echo "/usr/local/lib" >> /etc/ld.so.conf'
+sudo ldconfig
 
 cd $cwd
