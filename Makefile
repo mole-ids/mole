@@ -16,6 +16,7 @@ BINDIR=build
 VERSION=1.0.0
 BUILD=`git rev-parse HEAD`
 BUILDDATE=`date +%FT%T%z`
+
 PLATFORMS=darwin linux windows
 ARCHITECTURES=386 amd64
 
@@ -29,6 +30,9 @@ all: clean build_all install
 build:
 	go build ${LDFLAGS} -o ${BINDIR}/${BINARY}
 
+debug:
+	go build -tags=debug ${LDFLAGS} -o ${BINDIR}/${BINARY}
+
 build_all:
 	$(foreach GOOS, $(PLATFORMS),\
 	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build -v -o $(BINDIR)/$(BINARY)-$(GOOS)-$(GOARCH))))
@@ -36,9 +40,13 @@ build_all:
 install:
 	go install ${LDFLAGS}
 
-# Remove only what we've created
+test:
+	go test -v -count=1 -cover ./...
+
+docs:
+	make -C ./docs docs
+
 clean:
 	rm -rf ${BINDIR}
-	# find ${ROOT_DIR} -name '${BINARY}[-?][a-zA-Z0-9]*[-?][a-zA-Z0-9]*' -delete
 
-.PHONY: check clean install build_all all
+.PHONY: check clean build debug install build_all all docs

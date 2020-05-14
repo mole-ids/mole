@@ -1,13 +1,11 @@
+// +build !debug
+
 package main
 
 import (
-	"log"
-
-	"github.com/jpalanco/mole/cmd"
+	"github.com/mole-ids/mole/cmd"
 )
 
 func main() {
-	if err := cmd.IDSCommand().Execute(); err != nil {
-		log.Fatal(err)
-	}
+	cmd.Execute()
 }
