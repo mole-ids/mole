@@ -21,6 +21,6 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
-            --exp-branch=master --debugg
+            --exp-branch=master --debug
     chown -R $UID site
 fi
