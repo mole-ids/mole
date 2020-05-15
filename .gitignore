@@ -163,7 +163,6 @@ $RECYCLE.BIN/
 
 # Custom
 build/
-docs/site
 rules/*
 !rules/demo.yar
 mole.yml
