@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
 
 if ! [ "$BEFORE_DEPLOY_RUN" ]; then
-    export BEFORE_DEPLOY_RUN=1;
+    export BEFORE_DEPLOY_RUN=1
 
     if [ x$TRAVIS_TAG != x"" ]; then
-        echo "Building binaries";
-        make build;
-        cd build;
+        echo "Building binaries"
+        make build
+        cd build
         ARCH=$(uname -m)
-        sha256sum -b mole > "mole_linux_$ARCH.sha256";
+        sha256sum -b mole > "mole_linux_$ARCH.sha256"
         mv mole "mole_linux_$ARCH"
-        cd -;
+        cd -
     fi;
 
-    echo "Download documentation generator";
-    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION};
+    echo "Download documentation generator"
+    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
     
-    echo "Build documentation";
+    echo "Build documentation"
     "$GOPATH/bin/structor" -o mole-ids -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
-            --exp-branch=master --debug;
-    chown -R $UID site;
+            --exp-branch=master --debug
+    chown -R $UID site
 fi
