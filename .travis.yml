@@ -40,7 +40,7 @@ before_deploy:
         for f in $(ls *); do
           sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt";
         done;
-        cd -
+        cd -;
       fi;
       echo "Download documentation generator";
       curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION};
