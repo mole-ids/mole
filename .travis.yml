@@ -13,7 +13,7 @@ services:
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
-    - STRUCTOR_LATEST_TAG=$TRAVIS_TAG
+    - STRUCTOR_LATEST_TAG=v0.1
     - GO111MODULE=on
 
 install:
@@ -48,7 +48,7 @@ deploy:
     api_key: ${GITHUB_TOKEN}
     file: build/mole*
     file_glob: true
-    skip_cleanup: true
+    cleanup: true
     on:
       repo: mole-ids/mole
       tags: true
@@ -57,7 +57,7 @@ deploy:
     edge: false
     github_token: ${GITHUB_TOKEN}
     local_dir: site
-    skip_cleanup: true
+    cleanup: true
     on:
       repo: mole-ids/mole
       all_branches: true
