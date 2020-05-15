@@ -15,7 +15,6 @@ env:
     - STRUCTOR_VERSION=v1.10.0
     - STRUCTOR_LATEST_TAG=$TRAVIS_TAG
     - GO111MODULE=on
-    - CGO_ENABLED=1
 
 install:
   - sudo -E apt-get -yq update
@@ -30,28 +29,7 @@ script:
   - make test
 
 before_deploy:
-  - >
-  if ! [ "$BEFORE_DEPLOY_RUN" ]; then
-      export BEFORE_DEPLOY_RUN=1;
-      if [ x$TRAVIS_TAG != x"" ]; then
-        echo "Building binaries";
-        make build_all;
-        cd build;
-        for f in $(ls *); do
-          sha256sum $f >> "mole_$TRAVIS_TAG_sha256_checksums.txt";
-        done;
-        cd -;
-      fi;
-      echo "Download documentation generator";
-      curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION};
-      echo "Build documentation";
-      sudo -E "$GOPATH/bin/structor" -o mole-ids -r mole \
-              --force-edit-url \
-              --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
-              --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
-              --exp-branch=master --debug;
-      chown -R $UID site;
-    fi
+  - sudo -E ./script/build.sh
 
 deploy:
   - provider: releases
