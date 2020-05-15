@@ -44,14 +44,14 @@ before_deploy:
   - ./script/before_deploy.sh
 
 deploy:
-  - provider: releases
-    api_key: ${GITHUB_TOKEN}
-    file: build/mole*
-    file_glob: true
-    cleanup: true
-    on:
-      repo: mole-ids/mole
-      tags: true
+  # - provider: releases
+  #   api_key: ${GITHUB_TOKEN}
+  #   file: build/mole*
+  #   file_glob: true
+  #   cleanup: true
+  #   on:
+  #     repo: mole-ids/mole
+  #     tags: true
 
   - provider: pages
     edge: false

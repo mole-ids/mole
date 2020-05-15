@@ -16,10 +16,10 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
     curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
     
     echo "Build documentation"
-    sudo -E "$GOPATH/bin/structor" -o mole-ids -r mole \
+    "$GOPATH/bin/structor" -o mole-ids -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --debug
-    sudo -E chown -R $UID site
+    chown -R $UID site
 fi
