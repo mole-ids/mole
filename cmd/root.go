@@ -10,6 +10,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	AppName = "Mole IDS"
+	Version = "v0.0.0"
+	BuildHash = "devel"
+	BuildDate = "1970-01-01T00:00:00Z"
+)
+
 // RootCmd root command, this is the main entry point command
 var RootCmd = &cobra.Command{
 	Use:   "",
@@ -40,6 +47,8 @@ func init() {
 	RootCmd.PersistentFlags().String("logTo", "", "Log to file")
 	RootCmd.PersistentFlags().String("logLevel", "info", "Log level")
 
+	RootCmd.PersistentFlags().Bool("version", false, "Show Mole version")
+	
 	// Bind flags to configuration file
 	viper.BindPFlag("logger.log_to", RootCmd.PersistentFlags().Lookup("logTo"))
 	viper.BindPFlag("logger.log_level", RootCmd.PersistentFlags().Lookup("logLevel"))

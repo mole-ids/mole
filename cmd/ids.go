@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"os"
+	"fmt"
 	"syscall"
 
 	"github.com/mole-ids/mole/pkg/engine"
@@ -14,6 +16,14 @@ var idsCmd = &cobra.Command{
 	Use:   "ids",
 	Short: "start Mole as IDS",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		if val, err := cmd.Flags().GetBool("version"); err == nil && val {
+			fmt.Printf("%s %s\nBuilt datetime: %s\nBuild Hash: %s\n", AppName, Version, BuildDate, BuildHash)
+			os.Exit(0)
+		} else if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
 		logger.New()
 	},
 	Run: runIdsCmd,

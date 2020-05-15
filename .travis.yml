@@ -13,7 +13,7 @@ services:
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
-    - STRUCTOR_LATEST_TAG=v0.0.1
+    - STRUCTOR_LATEST_TAG=master
     - GO111MODULE=on
 
 install:
@@ -41,7 +41,7 @@ script:
   - make test
 
 before_deploy:
-  - sudo -E ./script/build.sh
+  - ./script/before_deploy.sh
 
 deploy:
   - provider: releases
