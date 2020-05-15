@@ -19,7 +19,7 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
     "$GOPATH/bin/structor" -o mole-ids -r mole \
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
+            --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/structor-menu.js.gotmpl" \
             --exp-branch=master --debug
     #chown -R $UID site
 fi
