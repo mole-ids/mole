@@ -20,7 +20,6 @@ env:
 install:
   - sudo -E apt-get -yq update
   - sudo -E apt-get -yq --no-install-suggests --no-install-recommends install build-essential autoconf libtool bison flex make libmagic-dev libssl-dev libpcap-dev g++-multilib
-  - chown -R $UID ./script && chmod -R +x ./script
   - sudo -E ./script/travis_setup.sh
   - sudo -E ./script/install_yara.sh
 
