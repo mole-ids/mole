@@ -7,9 +7,8 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         echo "Building binaries"
         make build
         cd build
-        ARCH=$(uname -m)
-        sha256sum -b mole > "mole_linux_$ARCH.sha256"
-        mv mole "mole_linux_$ARCH"
+        sha256sum -b mole > "mole_$GOOS_$GOARCH.sha256"
+        mv mole "mole_$GOOS_$GOARCH"
         cd -
     fi;
 
@@ -22,5 +21,5 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --debug
-    chown -R $UID site
+    sudo -E chown -R $UID site
 fi
