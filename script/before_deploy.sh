@@ -7,7 +7,9 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         echo "Building binaries";
         make build;
         cd build;
-        sha256sum -b * > $(ls *)".sha256";
+        ARCH=$(uname -m)
+        sha256sum -b mole > "mole_linux_$ARCH.sha256";
+        mv mole "mole_linux_$ARCH"
         cd -;
     fi;
 

@@ -10,32 +10,29 @@ K := $(foreach exec,$(EXECUTABLES),\
 
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-APPNAME=Mole
+APPNAME=MoleIDS
 BINARY=mole
 BINDIR=build
-VERSION=1.0.0
+VERSION=v0.0.0-dev
 BUILD=`git rev-parse HEAD`
 BUILDDATE=`date +%FT%T%z`
+PACKAGE=github.com/mole-ids/mole/cmd
 
-PLATFORMS=darwin linux windows
-ARCHITECTURES=386 amd64
+SRC=main.go
+SRC_DEBUG=debug.go
 
 # Setup linker flags option for build that interoperate with variable names in src code
-LDFLAGS=-ldflags "-X main.AppName=${APPNAME} -X main.Version=${VERSION} -X main.BuildDate=${BUILDDATE} -X main.BuildHash=${BUILD}"
+LDFLAGS=-ldflags "-X ${PACKAGE}.AppName=${APPNAME} -X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.BuildDate=${BUILDDATE} -X ${PACKAGE}.BuildHash=${BUILD}"
 
 default: build
 
 all: clean build_all install
 
 build:
-	go build ${LDFLAGS} -o ${BINDIR}/${BINARY}
+	go build ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
 
 debug:
-	go build -tags=debug ${LDFLAGS} -o ${BINDIR}/${BINARY}
-
-build_all:
-	$(foreach GOOS, $(PLATFORMS),\
-	$(foreach GOARCH, $(ARCHITECTURES), $(shell export GOOS=$(GOOS); export GOARCH=$(GOARCH); go build ${LDFLAGS} -o $(BINDIR)/$(BINARY)-$(GOOS)-$(GOARCH))))
+	go build -tags=debug ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC_DEBUG)
 
 install:
 	go install ${LDFLAGS}
