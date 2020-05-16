@@ -12,8 +12,8 @@ services:
 
 env:
   global:
+    - STRUCTOR_LATEST_TAG=v0.0
     - STRUCTOR_VERSION=v1.10.0
-    - STRUCTOR_LATEST_TAG=v0.1
     - GO111MODULE=on
 
 install:
