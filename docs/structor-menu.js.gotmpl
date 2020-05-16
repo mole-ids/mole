@@ -1,5 +1,5 @@
 {{- range $version := .Versions }}
-// {{$version}}
+// {{$version.Path}}||{{$version.Name}}||{{$version.State}}
 {{- end}}
 
 var versions = [
