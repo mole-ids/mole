@@ -1,4 +1,6 @@
-// {{.Versions}}
+{{- range $version := .Versions }}
+// {{$version}}
+{{- end}}
 
 var versions = [
   {{- range $version := .Versions }}
