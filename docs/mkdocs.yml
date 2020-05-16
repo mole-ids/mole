@@ -1,5 +1,5 @@
-site_name: MOLE NIDS
-site_description: MOLE Documentation
+site_name: MOLE IDS
+site_description: MOLE IDS Documentation
 site_author: mole-ids.org
 site_url: https://docs.mole-ids.org
 dev_addr: localhost:8000

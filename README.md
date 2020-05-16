@@ -1,3 +1,5 @@
+[![Build Status](https://www.travis-ci.org/mole-ids/mole.svg?branch=master)](https://www.travis-ci.org/mole-ids/mole)
+
 # MOLE
 
 Tested using:
