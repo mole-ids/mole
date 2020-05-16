@@ -15,6 +15,8 @@ function addMaterialMenu(elt, versions) {
       return value.selected
   })
 
+  if (typeof current == 'undefined') return;
+
   const rootLi = document.createElement('li');
   rootLi.classList.add('md-nav__item');
   rootLi.classList.add('md-nav__item--nested');
