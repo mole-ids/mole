@@ -54,7 +54,6 @@ deploy:
       tags: true
 
   - provider: pages
-    edge: false
     github_token: ${GITHUB_TOKEN}
     local_dir: site
     skip_cleanup: true
