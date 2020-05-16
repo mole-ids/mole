@@ -48,7 +48,7 @@ deploy:
     api_key: ${GITHUB_TOKEN}
     file: build/mole*
     file_glob: true
-    cleanup: true
+    cleanup: false
     on:
       repo: mole-ids/mole
       tags: true
@@ -57,7 +57,7 @@ deploy:
     edge: false
     github_token: ${GITHUB_TOKEN}
     local_dir: site
-    cleanup: true
+    cleanup: false
     on:
       repo: mole-ids/mole
       all_branches: true
