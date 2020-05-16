@@ -10,8 +10,11 @@ K := $(foreach exec,$(EXECUTABLES),\
 
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+OS=$(shell go env | grep GOOS | cut -d'"' -f2)
+ARCH=$(shell go env | grep GOARCH | cut -d'"' -f2)
+
 APPNAME=MoleIDS
-BINARY=mole
+BINARY=mole_${OS}_${ARCH}
 BINDIR=build
 VERSION=v0.0.0-dev
 BUILD=`git rev-parse HEAD`
