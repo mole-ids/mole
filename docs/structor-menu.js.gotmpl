@@ -1,7 +1,3 @@
-{{- range $version := .Versions }}
-// {{$version.Path}}||{{$version.Name}}||{{$version.State}}
-{{- end}}
-
 var versions = [
   {{- range $version := .Versions }}
   {{- $text := $version.Text }}
