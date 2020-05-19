@@ -131,7 +131,7 @@ func GetNodeByType(key string, value interface{}) (*Tree, error) {
 	return New(nv), err
 }
 
-// InsertRule insertes Yara rule and generates an ID
+// InsertRule inserts Yara rule and generates an ID
 func InsertRule(lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
 	if Decision == nil {
 		return nil, false, merr.DecisionTreeNotInitErr
@@ -247,7 +247,7 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 	// Initiate a backtracking search the the target
 	bt := NewBactracking(pkt)
 
-	// Start the search omiting the root node as it is only an empty node
+	// Start the search omitting the root node as it is only an empty node
 	bt.Backtrack(Decision.Children)
 
 	// If finally there is a solution, just returned it

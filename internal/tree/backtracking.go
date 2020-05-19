@@ -29,7 +29,7 @@ type Bactracking struct {
 	idNode *Tree
 }
 
-// NewBactracking retuns a new Backtracking object. The argument is the target
+// NewBactracking returns a new Backtracking object. The argument is the target
 // to search for
 func NewBactracking(target types.MetaRule) *Bactracking {
 	return &Bactracking{

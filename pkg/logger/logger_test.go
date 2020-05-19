@@ -19,7 +19,7 @@ func TestLogger(t *testing.T) {
 	err := New()
 
 	if err != nil {
-		t.Errorf("Expection no error, but found %s", err.Error())
+		t.Errorf("Exception no error, but found %s", err.Error())
 	}
 
 	if Log == nil {

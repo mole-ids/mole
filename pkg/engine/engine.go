@@ -146,7 +146,7 @@ func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
 	}
 }
 
-// Start read packages and fire Yara rules agains those packets
+// Start read packages and fire Yara rules against those packets
 func (motor *Engine) Start() {
 	logger.Log.Info("engine is listening for packages")
 

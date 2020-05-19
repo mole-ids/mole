@@ -81,7 +81,7 @@ func TestFindInsert(t *testing.T) {
 		}
 
 		if !ok {
-			t.Error("Expection the result to be true, but found false")
+			t.Error("Exception the result to be true, but found false")
 		}
 
 		if err != nil {

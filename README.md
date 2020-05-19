@@ -10,11 +10,11 @@
 
 
 
-Mole is an experimental Network Intrusion Detection System that uses Yara as matching engine.
+Mole is an experimental Network Intrusion Detection System that uses Yara as matching engine and PF_RING for high speed packet capture.
 
 ---
 
-.**[Features](#features)** .
+. **[Features](#features)** .
 **[Supported OSes](#supported-oses)** .
 **[Quickstart](#quickstart)** .
 **[Documentation](#documentation)** .
@@ -40,7 +40,7 @@ Planned Windows 10 and MacOS X.
 
 ## Quickstart
 
-To get your hands on Mole, you can use the [5-Minute Quickstart](https://docs.moleids.org/getting-started/quick-start/) in our documentation.
+To get your hands on Mole, you can use the [5-Minute Quickstart](https://docs.mole-ids.org/getting-started/quick-start/) in our documentation.
 
 
 ## Documentation

@@ -38,19 +38,19 @@ func NewMRRoot() MRRoot {
 }
 
 // Match is a dummy function that needs to be implemented in terms to
-// acomplish the NodeValue interface
+// accomplish the NodeValue interface
 func (mr MRRoot) Match(proto NodeValue) bool {
 	return true
 }
 
 // GetKey is a dummy function that needs to be implemented in terms to
-// acomplish the NodeValue interface
+// accomplish the NodeValue interface
 func (mr MRRoot) GetKey() string {
 	return mr.Key
 }
 
 // GetValue is a dummy function that needs to be implemented in terms to
-// acomplish the NodeValue interface
+// accomplish the NodeValue interface
 func (mr MRRoot) GetValue() string {
 	return mr.Value
 }
