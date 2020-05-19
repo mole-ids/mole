@@ -14,18 +14,11 @@ Mole is an experimental Network Intrusion Detection System that uses Yara as mat
 
 ---
 
-. **[Overview](#overview)** .
-**[Features](#features)** .
-**[Supported backends](#supported-backends)** .
+.**[Features](#features)** .
+**[Supported OSes](#supported-oses)** .
 **[Quickstart](#quickstart)** .
-**[Web UI](#web-ui)** .
 **[Documentation](#documentation)** .
-
-. **[Support](#support)** .
-**[Release cycle](#release-cycle)** .
 **[Contributing](#contributing)** .
-**[Maintainers](#maintainers)** .
-**[Credits](#credits)** .
 
 ---
 
@@ -37,7 +30,7 @@ Mole is an experimental Network Intrusion Detection System that uses Yara as mat
 - Rule configuration using meta fields from Yara (variables, ranges, ...)
 
 
-## Supported OS
+## Supported OSes
 
 - [Ubuntu 18.04.4 LTS (Bionic Beaver)](https://releases.ubuntu.com/18.04.4/) 
 - [Debian GNU/Linux 10 (buster)](https://www.debian.org/releases/buster/)
