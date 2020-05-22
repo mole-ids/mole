@@ -34,7 +34,7 @@ func New() (err error) {
 	config, err = InitConfig()
 
 	if err != nil {
-		return merr.LoggerInitConfigErr
+		return merr.ErrLoggerInitConfig
 	}
 
 	var hostname string
@@ -76,23 +76,23 @@ func New() (err error) {
 	}
 	l, err := logConfig.Build(zap.Fields(op))
 	if err != nil {
-		return merr.LoggerBuildZapFieldsErr
+		return merr.ErrLoggerBuildZapFields
 	}
 
 	Log = l.Sugar()
 	defer Log.Sync()
 
-	// TODO: This needs to be don properly. Maybe using its own configuration
+	// TODO: This needs to be done properly. Maybe using its own configuration
 	// variables
 	lr, err := logConfig.Build(zap.Fields(op))
 	if err != nil {
-		return merr.LoggerBuildZapFieldsErr
+		return merr.ErrLoggerBuildZapFields
 	}
 
 	Result = lr.Sugar()
 	defer Result.Sync()
 
-	Log.Info(LoggerInitSuccessMsg)
+	Log.Infof(LoggerInitSuccessMsg, logConfig.Level.Level().CapitalString())
 
 	return nil
 }

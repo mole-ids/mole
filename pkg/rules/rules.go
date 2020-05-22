@@ -33,8 +33,8 @@ type Manager struct {
 	RawRules []string
 }
 
-// NewManager returns a new rules manager
-func NewManager() (manager *Manager, err error) {
+// NewManagerW returns a new rules manager
+func NewManagerW() (manager *Manager, err error) {
 	manager = &Manager{}
 	manager.Config, err = InitConfig()
 
@@ -53,8 +53,8 @@ func NewManager() (manager *Manager, err error) {
 	return manager, err
 }
 
-// NewManagerCustom returns a new rules manager
-func NewManagerCustom() (manager *Manager, err error) {
+// NewManager returns a new rules manager
+func NewManager() (manager *Manager, err error) {
 	manager = &Manager{}
 	manager.Config, err = InitConfig()
 
@@ -86,7 +86,7 @@ var (
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
 func (ma *Manager) LoadRules() (err error) {
 	if ma.Config.RulesIndex == "" && ma.Config.RulesFolder == "" {
-		return merr.RuleOrIndexNotDefinedErr
+		return merr.ErrRuleOrIndexNotDefined
 	}
 
 	if ma.Config.RulesIndex != "" {
@@ -105,7 +105,11 @@ func (ma *Manager) LoadRules() (err error) {
 // LoadRulesByIndex loads the rules defined in the `idxFile`
 func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 	// Removing comments from the file
-	cleanIndex := string(RemoveCAndCppCommentsFile(idxFile))
+	res, err := RemoveCAndCppCommentsFile(idxFile)
+	if err != nil {
+		return errors.Wrap(err, merr.WhileLoadingRulesMsg)
+	}
+	cleanIndex := string(res)
 	// Removing empty lines
 	cleanIndex = removeBlanksRe.ReplaceAllString(strings.TrimSpace(cleanIndex), "\n")
 

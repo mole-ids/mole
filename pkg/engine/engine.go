@@ -64,7 +64,7 @@ func New() (motor *Engine, err error) {
 	}
 
 	// Get the rules manager
-	motor.RulesManager, err = rules.NewManager()
+	motor.RulesManager, err = rules.NewManagerW()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to initiate rules manager")
 	}

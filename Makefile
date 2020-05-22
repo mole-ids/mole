@@ -20,6 +20,7 @@ VERSION=v0.0.0-dev
 BUILD=`git rev-parse HEAD`
 BUILDDATE=`date +%FT%T%z`
 PACKAGE=github.com/mole-ids/mole/cmd
+COVER_PROFILE=c.out
 
 SRC=main.go
 SRC_DEBUG=debug.go
@@ -41,7 +42,10 @@ install:
 	go install ${LDFLAGS}
 
 test:
-	go test -v -count=1 -cover ./...
+	go test -v -count=1 ./...
+
+test-cover:
+	go test -v -count=1 -cover -coverprofile=${COVER_PROFILE} ./...
 
 docs:
 	make -C ./docs docs

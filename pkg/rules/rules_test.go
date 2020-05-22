@@ -19,59 +19,22 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/spf13/viper"
 )
 
-var (
-	dir, _ = ioutil.TempDir("", "")
-)
-
-const (
-	config1 = `
-rules:
-  rules_index: %s
-  variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"`
-)
-
-func init() {
-	logger.New()
+func writeIndex(dir, iname, rname string) {
+	i := fmt.Sprintf(`include "%s"`, rname)
+	ioutil.WriteFile(filepath.Join(dir, iname), []byte(i), 0655)
 }
 
-func writeIndex() {
-	i := `include "./rule.yar"`
-	ioutil.WriteFile(filepath.Join(dir, "index.yar"), []byte(i), 0655)
+func writeRules(dir, name, content string) {
+	ioutil.WriteFile(filepath.Join(dir, name), []byte(content), 0655)
 }
 
-func writeRules() {
-	r := `rule ExampleRule {
-meta:
-	type = "alert"
-	proto = "tcp"
-	src = "192.168.0.1"
-	src_port = "any"
-	dst = "any"
-    dst_port = "80"
-strings:
-	$my_text_string = "google.com"
-	$my_hex_string = { 8d }
-	$my_hex_string2 = { 00 }
-
-condition:
-	$my_text_string or $my_hex_string or $my_hex_string2
-}
-	`
-	ioutil.WriteFile(filepath.Join(dir, "rule.yar"), []byte(r), 0655)
-}
-
-func TestNewManagerCustom(t *testing.T) {
+func TestNewManager(t *testing.T) {
 	var err error
 
-	_, err = NewManagerCustom()
+	_, err = NewManager()
 	if err != nil {
 		t.Errorf("Unexpected error: %s", err.Error())
 	}
@@ -79,104 +42,245 @@ func TestNewManagerCustom(t *testing.T) {
 }
 
 func TestLoadRulesByDir(t *testing.T) {
-	var err error
+	testCase := []struct {
+		cfg      string
+		rFolder  string
+		rIndex   string
+		rName    string
+		rule     string
+		rawRules int
+		err      bool
+	}{{
+		cfg: `
+rules:
+  rules_dir: %s
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		rFolder:  "",
+		rIndex:   "",
+		rName:    "",
+		rule:     "",
+		rawRules: 0,
+		err:      false,
+	}, {
+		cfg: `
+rules:
+  rules_dir: %s
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		rFolder:  test_dir,
+		rIndex:   test_rulesIndex,
+		rName:    test_rulesName,
+		rule:     `rule R { condition: $ }`,
+		rawRules: 1,
+		err:      false,
+	}}
 
 	viper.Reset()
 
-	writeRules()
+	for idx, tc := range testCase {
+		if len(tc.rule) > 0 {
+			writeRules(tc.rFolder, tc.rName, tc.rule)
+		}
+		if idx != 0 {
+			initViper(fmt.Sprintf(tc.cfg, tc.rFolder))
+		}
 
-	ma, err := NewManagerCustom()
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err.Error())
-	}
+		ma, err := NewManager()
 
-	if ma.Config.RulesFolder != "" {
-		t.Errorf("Expecting configuration RulesFolder to be empty, but found %s", ma.Config.RulesFolder)
-	}
+		if tc.err && err == nil {
+			t.Errorf("[%d] Expecting error but none found", idx)
+		}
 
-	if ma.Config.RulesIndex != "" {
-		t.Errorf("Expecting configuration RulesIndex to be empty, but found %s", ma.Config.RulesIndex)
-	}
+		if !tc.err && err != nil {
+			t.Errorf("[%d] Expecting no error but found: %s", idx, err.Error())
+		}
 
-	if len(ma.RawRules) != 0 {
-		t.Errorf("Expecting no RawRules, but found %d", len(ma.RawRules))
-	}
+		if ma.Config.RulesFolder != tc.rFolder {
+			t.Errorf("[%d] Expecting RulesFolder to be %s, but found %s", idx, tc.rFolder, ma.Config.RulesFolder)
+		}
 
-	ma.LoadRulesByDir(dir)
+		if ma.Config.RulesIndex != "" {
+			t.Errorf("[%d] Expecting RulesIndex to be '', but found %s", idx, ma.Config.RulesIndex)
+		}
 
-	if len(ma.RawRules) != 1 {
-		t.Errorf("Expecting to have 1 RawRules, but found %d", len(ma.RawRules))
+		if len(ma.RawRules) != 0 {
+			t.Errorf("[%d] Expecting no RawRules, but found %d", idx, len(ma.RawRules))
+		}
+
+		if idx != 0 {
+			ma.LoadRulesByDir(tc.rFolder)
+		}
+
+		if len(ma.RawRules) != tc.rawRules {
+			t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
+		}
 	}
 }
 
 func TestLoadRulesByIndex(t *testing.T) {
-	var err error
+	testCase := []struct {
+		cfg            string
+		rFolder        string
+		rIndex         string
+		rName          string
+		rule           string
+		rawRules       int
+		checkIndex     bool
+		err            bool
+		errLoadingFile bool
+	}{{
+		cfg: `
+rules:
+  rules_index: %s/index.yar
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		rFolder:        "",
+		rIndex:         ".",
+		rName:          "",
+		rule:           "",
+		rawRules:       0,
+		checkIndex:     true,
+		err:            false,
+		errLoadingFile: false,
+	}, {
+		cfg: `
+rules:
+  rules_index: %s/index.yar
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		rFolder:        test_dir,
+		rIndex:         test_rulesIndex,
+		rName:          test_rulesName,
+		rule:           `rule R { condition: $ }`,
+		rawRules:       1,
+		checkIndex:     true,
+		err:            false,
+		errLoadingFile: false,
+	}, {
+		cfg: `
+rules:
+  rules_index: %s/index.yar1
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		rFolder:        test_dir,
+		rIndex:         "index.ERROR",
+		rName:          test_rulesName,
+		rule:           `rule R { condition: $ }`,
+		rawRules:       0,
+		checkIndex:     false,
+		err:            false,
+		errLoadingFile: true,
+	}}
 
 	viper.Reset()
 
-	writeIndex()
-	writeRules()
+	for idx, tc := range testCase {
+		writeIndex(tc.rFolder, tc.rIndex, tc.rName)
+		writeRules(tc.rFolder, tc.rName, tc.rule)
+		if idx != 0 {
+			initViper(fmt.Sprintf(tc.cfg, tc.rFolder))
+		}
 
-	ma, err := NewManagerCustom()
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err.Error())
-	}
+		ma, err := NewManager()
 
-	if ma.Config.RulesFolder != "" {
-		t.Errorf("Expecting configuration RulesFolder to be empty, but found %s", ma.Config.RulesFolder)
-	}
+		if tc.err && err == nil {
+			t.Errorf("[%d] Expecting error but none found", idx)
+		}
 
-	if ma.Config.RulesIndex != "" {
-		t.Errorf("Expecting configuration RulesIndex to be empty, but found %s", ma.Config.RulesIndex)
-	}
+		if !tc.err && err != nil {
+			t.Errorf("[%d] Expecting no error but found: %s", idx, err.Error())
+		}
 
-	if len(ma.RawRules) != 0 {
-		t.Errorf("Expecting no RawRules, but found %d", len(ma.RawRules))
-	}
+		if ma.Config.RulesFolder != "" {
+			t.Errorf("[%d] Expecting RulesFolder to be '', but found %s", idx, ma.Config.RulesFolder)
+		}
 
-	ma.LoadRulesByIndex(filepath.Join(dir, "index.yar"))
+		if tc.checkIndex && filepath.Base(ma.Config.RulesIndex) != tc.rIndex {
+			t.Errorf("[%d] Expecting RulesIndex to be %s, but found %s", idx, tc.rIndex, filepath.Base(ma.Config.RulesIndex))
+		}
 
-	if len(ma.RawRules) != 1 {
-		t.Errorf("Expecting to have 1 RawRules, but found %d", len(ma.RawRules))
-	}
-}
+		if len(ma.RawRules) != 0 {
+			t.Errorf("[%d] Expecting no RawRules, but found %d", idx, len(ma.RawRules))
+		}
 
-func TestLoadRulesWithoutConfig(t *testing.T) {
-	var err error
+		if idx != 0 {
+			err = ma.LoadRulesByIndex(viper.GetString("rules.rules_index"))
+			if tc.errLoadingFile && err == nil {
+				t.Errorf("[%d] Expecting error when loading rules by index, but none found", idx)
+			}
+			if !tc.errLoadingFile && err != nil {
+				t.Errorf("[%d] Expecting no error when loading rules by index, but found: %s", idx, err.Error())
+			}
+		}
 
-	viper.Reset()
-
-	_, err = NewManager()
-	if err == nil {
-		t.Error("Expected error but none found")
+		if len(ma.RawRules) != tc.rawRules {
+			t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
+		}
 	}
 }
 
 func TestLoadRulesWithConfig(t *testing.T) {
 	var err error
 
-	viper.Reset()
+	testCase := []struct {
+		cfg string
+		err bool
+	}{{
+		cfg: `
+rules:
+  rules_dir: ./rules
+  rules_index: index.yar
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		err: false,
+	}, {
+		cfg: `
+rules:
+  variables:
+    $TCP:
+      - tcp
+    $HOME_NET:
+      - "10.0.0.0/8"
+`,
+		err: true,
+	}}
 
-	name := "mole"
-	ext := "yml"
-	fname := name + "." + ext
-	fpath := filepath.Join(dir, fname)
+	for idx, tc := range testCase {
+		initViper(tc.cfg)
 
-	ioutil.WriteFile(fpath, []byte(fmt.Sprintf(config1, filepath.Join(dir, "index.yar"))), 0655)
+		_, err = NewManagerW()
+		if tc.err && err == nil {
+			t.Errorf("[%d] Expecting error but none found", idx)
+		}
 
-	viper.Reset()
-	viper.SetConfigType("yaml")
-	viper.SetConfigName(name)
-	viper.AddConfigPath(dir)
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		t.Errorf("Fatal error config file: %s", err)
-	}
-
-	_, err = NewManager()
-	if err != nil {
-		t.Errorf("Unexpected error: %s", err.Error())
+		if !tc.err && err != nil {
+			t.Errorf("[%d] Unexpected error: %s", idx, err.Error())
+		}
 	}
 
 }

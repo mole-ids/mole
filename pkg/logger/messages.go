@@ -14,7 +14,7 @@
 package logger
 
 const (
-	LoggerInitSuccessMsg    = "logger initiated successfully"
+	LoggerInitSuccessMsg    = "logger successfully initiated in %s level"
 	ExtractMetaFromLayerMsg = "protocol not allowed"
 	ExtractTransporDataMsg  = "protocol not allowed in transport"
 	MetadataExtractedMsg    = "extracted from network packet: %v"

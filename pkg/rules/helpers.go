@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/hillu/go-yara"
+	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/internal/utils"
 	"github.com/pkg/errors"
@@ -40,12 +41,12 @@ func RemoveCppStyleComments(content []byte) []byte {
 
 // RemoveCAndCppCommentsFile removes either C-Style or C++Style comments from
 // a file
-func RemoveCAndCppCommentsFile(srcpath string) []byte {
+func RemoveCAndCppCommentsFile(srcpath string) ([]byte, error) {
 	b, err := ioutil.ReadFile(srcpath)
 	if err != nil {
-		panic(err)
+		return b, errors.Wrap(err, merr.WhileReadingFileMsg)
 	}
-	return RemoveCppStyleComments(RemoveCStyleComments(b))
+	return RemoveCppStyleComments(RemoveCStyleComments(b)), nil
 }
 
 // RemoveCAndCppComments removes either C-Style or C++Style comments from
@@ -59,10 +60,9 @@ func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 	metarule = make(types.MetaRule)
 	for _, meta := range rule.MetaList() {
 		if utils.InStrings(meta.Identifier, types.Keywords) {
-			metarule[meta.Identifier], err = types.GetNodeValue(meta.Identifier, meta.Value)
-			if err != nil {
-				return metarule, errors.Wrap(err, "while building rule metadata")
-			}
+			// This will never generate an error becauses meta.Identifieris double
+			// checked in the previous conditional
+			metarule[meta.Identifier], _ = types.GetNodeValue(meta.Identifier, meta.Value)
 		}
 	}
 	return metarule, nil

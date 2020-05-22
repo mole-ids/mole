@@ -163,6 +163,7 @@ $RECYCLE.BIN/
 
 # Custom
 build/
+c.out
 rules/*
 !rules/demo.yar
 docs/site

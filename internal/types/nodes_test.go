@@ -35,6 +35,64 @@ func TestMRRoot(t *testing.T) {
 	if mr.GetKey() != "root" {
 		t.Errorf("Expecting key to be root, but found %s", mr.GetKey())
 	}
+
+	if mr.GetValue() != "" {
+		t.Errorf("Expecting empty value, but found %s", mr.GetValue())
+	}
+}
+
+func TestMRProto(t *testing.T) {
+	testCase := []struct {
+		key         string
+		value       string
+		expectedErr bool
+		value2      string
+		match       bool
+	}{{
+		key:         "proto",
+		value:       "tcp",
+		expectedErr: false,
+		value2:      "tcp",
+		match:       true,
+	}, {
+		key:         "proto",
+		value:       "udp",
+		expectedErr: false,
+		value2:      "udp",
+		match:       true,
+	}, {
+		key:         "proto",
+		value:       "tcp",
+		expectedErr: false,
+		value2:      "udp",
+		match:       false,
+	}}
+
+	for idx, tc := range testCase {
+		mr, err := NewMRProto(tc.value)
+
+		if tc.expectedErr && err == nil {
+			t.Errorf("[%d] Expected error but none found", idx)
+		}
+		if !tc.expectedErr && err != nil {
+			t.Errorf("[%d] Expected no error but found %s", idx, err.Error())
+		}
+
+		if mr.GetKey() != tc.key {
+			t.Errorf("[%d] Expecting key to be %s, but found %s", idx, tc.key, mr.GetKey())
+		}
+
+		if mr.GetValue() != tc.value {
+			t.Errorf("[%d] Expecting value to be %s, but found %s", idx, tc.value, mr.GetValue())
+		}
+
+		mr1, _ := NewMRProto(tc.value2)
+
+		res := mr.Match(mr1)
+		if res != tc.match {
+			t.Errorf("[%d] Expecting nodes to match (%t), but they differ (%t)", idx, tc.match, res)
+		}
+	}
 }
 
 func TestMRPort(t *testing.T) {

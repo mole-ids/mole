@@ -26,66 +26,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	rulesDir   = "./rules"
-	rulesIndex = "index.yar"
-
-	cstyle   = "C-Style comment"
-	cppstyle = "Cpp-Style comment"
-
-	rule = `
-/* C-Style comment */
-rule ExampleRule
-{
-	/*
-	C-Style comment -- strings
-	*/
-	strings:
-		$my_text_string = "google.com" // Cpp-Style comment
-		$my_hex_string = { 8d }
-		$my_hex_string2 = { 00 }
-	// Cpp-Style comment -- strings
-	condition:
-		$my_text_string or $my_hex_string or $my_hex_string2
-}
-// Cpp-Style comment
-	`
-
-	config = `
-rules:
-  rules_dir: ./rules
-  rules_index: index.yar
-  variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
-`
-)
-
 func TestInitConfigFromFile(t *testing.T) {
-	dir, err := ioutil.TempDir("", "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
-
-	name := "mole"
-	ext := "yml"
-	fname := name + "." + ext
-	fpath := filepath.Join(dir, fname)
-
-	ioutil.WriteFile(fpath, []byte(config), 0655)
-
-	viper.Reset()
-	viper.SetConfigType("yaml")
-	viper.SetConfigName(name)
-	viper.AddConfigPath(dir)
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		t.Errorf("Fatal error config file: %s", err)
-	}
+	initViper(test_config)
 
 	if d := viper.GetString("rules.rules_dir"); d != "./rules" {
 		t.Errorf("Flag rules.rules_dir was not defined :: %s", viper.GetString("rules.rules_dir"))
@@ -113,13 +55,13 @@ func TestInitConfigFromFile(t *testing.T) {
 }
 
 func TestRemoveCStyleComments(t *testing.T) {
-	res := string(RemoveCStyleComments([]byte(rule)))
+	res := string(RemoveCStyleComments([]byte(test_rule)))
 
-	if strings.Contains(res, cstyle) {
+	if strings.Contains(res, test_cstyle) {
 		t.Error("Unexpected C-Style comment found")
 	}
 
-	if !strings.Contains(res, cppstyle) {
+	if !strings.Contains(res, test_cppstyle) {
 		t.Error("Expecting Cpp-Style to be in the result, but none found")
 	}
 
@@ -129,13 +71,13 @@ func TestRemoveCStyleComments(t *testing.T) {
 }
 
 func TestRemoveCppStyleComments(t *testing.T) {
-	res := string(RemoveCppStyleComments([]byte(rule)))
+	res := string(RemoveCppStyleComments([]byte(test_rule)))
 
-	if strings.Contains(res, cppstyle) {
+	if strings.Contains(res, test_cppstyle) {
 		t.Error("Unexpected Cpp-Style comment found")
 	}
 
-	if !strings.Contains(res, cstyle) {
+	if !strings.Contains(res, test_cstyle) {
 		t.Error("Expecting Cpp-Style to be in the result, but none found")
 	}
 
@@ -145,18 +87,56 @@ func TestRemoveCppStyleComments(t *testing.T) {
 }
 
 func TestRemoveCAndCppComments(t *testing.T) {
-	res := string(RemoveCAndCppComments(rule))
+	res := string(RemoveCAndCppComments(test_rule))
 
-	if strings.Contains(res, cstyle) {
+	if strings.Contains(res, test_cstyle) {
 		t.Error("Unexpected C-Style comment found")
 	}
 
-	if strings.Contains(res, cppstyle) {
+	if strings.Contains(res, test_cppstyle) {
 		t.Error("Unexpected Cpp-Style comment found")
 	}
 
 	if strings.Count(res, "strings") != 1 {
 		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
+	}
+}
+
+func TestRemoveCAndCppCommentsFile(t *testing.T) {
+	f, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Error("Unexpected error while creating temp file")
+	}
+
+	_, err = f.WriteString(test_rule)
+	if err != nil {
+		t.Error("Unexpected error while creating temp file")
+	}
+
+	fname := f.Name()
+
+	resByte, err := RemoveCAndCppCommentsFile(fname)
+	if err != nil {
+		t.Errorf("Expecting no errors but found: %s", err.Error())
+	}
+
+	res := string(resByte)
+
+	if strings.Contains(res, test_cstyle) {
+		t.Error("Unexpected C-Style comment found")
+	}
+
+	if strings.Contains(res, test_cppstyle) {
+		t.Error("Unexpected Cpp-Style comment found")
+	}
+
+	if strings.Count(res, "strings") != 1 {
+		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
+	}
+
+	resByte, err = RemoveCAndCppCommentsFile(fname + "_")
+	if err == nil {
+		t.Error("Expecting error but none found")
 	}
 }
 
@@ -233,7 +213,7 @@ func Test_cleanUpLine(t *testing.T) {
 	for idx, tc := range testCase {
 		res := cleanUpLine(tc.Line)
 		if res != tc.Result {
-			t.Errorf("%d - Expecting result to be %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting result to be %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -262,7 +242,7 @@ func Test_parseRuleAndVarsSRC(t *testing.T) {
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
 		if !strings.Contains(res, tc.Result) {
-			t.Errorf("%d - Expecting rule with %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting rule with %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -291,7 +271,7 @@ func Test_parseRuleAndVarsDST(t *testing.T) {
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
 		if !strings.Contains(res, tc.Result) {
-			t.Errorf("%d - Expecting rule with %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting rule with %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -320,7 +300,7 @@ func Test_parseRuleAndVarsSRC_PORT(t *testing.T) {
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
 		if !strings.Contains(res, tc.Result) {
-			t.Errorf("%d - Expecting rule with %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting rule with %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -349,7 +329,7 @@ func Test_parseRuleAndVarsDST_PORT(t *testing.T) {
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
 		if !strings.Contains(res, tc.Result) {
-			t.Errorf("%d - Expecting rule with %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting rule with %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -379,7 +359,7 @@ func Test_parseRuleAndVars(t *testing.T) {
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
 		if !strings.Contains(res, tc.Result) {
-			t.Errorf("%d - Expecting rule with %s, but found %s", idx, tc.Result, res)
+			t.Errorf("[%d] - Expecting rule with %s, but found %s", idx, tc.Result, res)
 		}
 	}
 }
@@ -413,7 +393,7 @@ func Test_splitRules(t *testing.T) {
 	for idx, tc := range testCase {
 		res := splitRules(tc.Rules)
 		if len(res) != len(tc.Result) {
-			t.Errorf("%d - Expecting %d rules, but found %d", idx, len(tc.Result), len(res))
+			t.Errorf("[%d] - Expecting %d rules, but found %d", idx, len(tc.Result), len(res))
 		}
 	}
 }
@@ -423,7 +403,7 @@ func TestGetRuleMetaInfo(t *testing.T) {
 		Rule   string
 		YRule  yara.Rule
 		Result types.MetaRule
-		Err    error
+		Err    bool
 	}{{
 		Rule: `rule T1 {
 meta:
@@ -438,13 +418,13 @@ condition:
 	$a
 }`,
 		Result: make(types.MetaRule),
-		Err:    nil,
+		Err:    false,
 	}}
 
-	for _, tc := range testCase {
+	for idx, tc := range testCase {
 		yc, err := yara.NewCompiler()
 		if err != nil {
-			t.Errorf("Unexpected error when getting Yara Compiler. Err: %s", err.Error())
+			t.Errorf("[%d] Unexpected error when getting Yara Compiler. Err: %s", idx, err.Error())
 		}
 
 		yc.AddString(tc.Rule, "test")
@@ -453,19 +433,22 @@ condition:
 		tc.YRule = yr[0]
 	}
 
-	for _, tc := range testCase {
+	for idx, tc := range testCase {
 		res, err := GetRuleMetaInfo(tc.YRule)
-		if err != tc.Err {
-			t.Errorf("Unexpected, found error %s, but wanted %s", err.Error(), tc.Err.Error())
+		if tc.Err && err == nil {
+			t.Errorf("[%d] Expecting error, but none found", idx)
+		}
+		if !tc.Err && err != nil {
+			t.Errorf("[%d] Un expected error: %s", idx, err.Error())
 		}
 
 		if len(res) != len(types.Keywords) {
-			t.Errorf("Expecting result to have %d keys, but found %d", len(types.Keywords), len(res))
+			t.Errorf("[%d] Expecting result to have %d keys, but found %d", idx, len(types.Keywords), len(res))
 		}
 
-		for _, k := range types.Keywords {
+		for jdx, k := range types.Keywords {
 			if _, ok := res[k]; !ok {
-				t.Errorf("Meta key not found, %s", k)
+				t.Errorf("[%d]-[%d] Meta key not found, %s", idx, jdx, k)
 			}
 		}
 	}

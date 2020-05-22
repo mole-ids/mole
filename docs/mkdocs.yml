@@ -39,11 +39,6 @@ extra_javascript:
   - assets/js/hljs/highlight.pack.js # Download from https://highlightjs.org/download/ and enable YAML, TOML and Dockerfile
   - assets/js/extra.js
 
-markdown_extensions:
-  - admonition
-  - toc:
-      permalink: true
-
 plugins:
   - search
   - exclude:
@@ -78,3 +73,4 @@ nav:
     - 'Quick Start': 'getting-started/quick-start.md'
     - 'Configuration Introduction': 'getting-started/configuration-overview.md'
     - 'Install Mole': 'getting-started/install-mole.md'
+  - 'Writing rules': 'writing-rules.md'
