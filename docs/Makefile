@@ -20,7 +20,7 @@ DOCKER_SERVE_DOC_OPS := --rm $(DOCKER_SERVE_DOC_MOUNTS) $(DOCKER_SERVE_DOC_ENV)
 
 docs: docs-clean docs-image docs-lint docs-build docs-verify
 
-docs-serve: docs-serve-image
+docs-serve: docs-serve-image docs-build
 	docker run $(DOCKER_SERVE_DOC_OPS) $(MOLE_DOCS_SERVE_IMAGE)
 
 docs-serve-image:
