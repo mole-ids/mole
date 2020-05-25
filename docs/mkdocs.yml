@@ -67,10 +67,10 @@ markdown_extensions:
 
 # Page tree
 nav:
-  - 'Welcome': 'index.md'
+  - 'Welcome': index.md
   - 'Getting Started':
-    - 'Concepts' : 'getting-started/concepts.md'
-    - 'Quick Start': 'getting-started/quick-start.md'
-    - 'Configuration Introduction': 'getting-started/configuration-overview.md'
-    - 'Install Mole': 'getting-started/install-mole.md'
-  - 'Writing rules': 'writing-rules.md'
+    - 'Concepts' : getting-started/concepts.md
+    - 'Quick Start': getting-started/quick-start.md
+    - 'Configuration Introduction': getting-started/configuration-overview.md
+    - 'Install Mole': getting-started/install-mole.md
+  - 'Writing rules': writing-rules.md
