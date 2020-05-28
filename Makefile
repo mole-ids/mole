@@ -23,7 +23,6 @@ PACKAGE=github.com/mole-ids/mole/cmd
 COVER_PROFILE=c.out
 
 SRC=main.go
-SRC_DEBUG=debug.go
 
 # Setup linker flags option for build that interoperate with variable names in src code
 LDFLAGS=-ldflags "-X ${PACKAGE}.AppName=${APPNAME} -X ${PACKAGE}.Version=${VERSION} -X ${PACKAGE}.BuildDate=${BUILDDATE} -X ${PACKAGE}.BuildHash=${BUILD}"
@@ -34,9 +33,6 @@ all: clean build_all install
 
 build:
 	go build ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
-
-debug:
-	go build -tags=debug ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC_DEBUG)
 
 install:
 	go install ${LDFLAGS}
@@ -53,4 +49,4 @@ docs:
 clean:
 	rm -rf ${BINDIR}
 
-.PHONY: check clean build debug install build_all all docs
+.PHONY: check clean build install build_all all docs
