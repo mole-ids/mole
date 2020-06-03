@@ -27,35 +27,33 @@ import (
 )
 
 func TestInitConfigFromFile(t *testing.T) {
-	initViper(test_config)
+	startup()
+	initViper(test_config, filepath.Join(test_dir, test_rulesDir))
 
-	if d := viper.GetString("rules.rules_dir"); d != "./rules" {
-		t.Errorf("Flag rules.rules_dir was not defined :: %s", viper.GetString("rules.rules_dir"))
+	if d := viper.GetString("rules.rules_dir"); d != "rules" {
+		t.Error("Flag rules.rules_dir was not defined")
 	}
 
-	if d := viper.GetString("rules.rules_index"); d != "index.yar" {
+	if d := viper.GetString("rules.rules_index"); d != "rules/index.yar" {
 		t.Error("Flag rules.rules_index was not defined")
 	}
 
-	d := viper.GetStringMapStringSlice("rules.variables")
+	d := viper.GetStringMapString("rules.variables")
 	if len(d) != 2 {
-		t.Error("Flag rules.variables was not defined")
+		t.Error("Flag rules.variables was not defined or it contains an invalid amount of items")
 	}
 
 	if val, ok := d["$tcp"]; !ok {
 		t.Error("Falg rules.variables.$tcp is not defined")
 	} else {
-		if len(val) != 1 {
-			t.Errorf("Expecting flag rules.variables[$tcp] to have one value, but found %d", len(val))
-		}
-		if len(val) > 0 && val[0] != "tcp" {
-			t.Errorf("Expecting flag rules.variables[$tcp] to have as value tcp, but found %s", val[0])
+		if val != "tcp" {
+			t.Errorf("Expecting flag rules.variables[$tcp] to have as value tcp, but found %s", val)
 		}
 	}
 }
 
 func TestRemoveCStyleComments(t *testing.T) {
-	res := string(RemoveCStyleComments([]byte(test_rule)))
+	res := string(removeCStyleComments([]byte(test_rule)))
 
 	if strings.Contains(res, test_cstyle) {
 		t.Error("Unexpected C-Style comment found")
@@ -71,7 +69,7 @@ func TestRemoveCStyleComments(t *testing.T) {
 }
 
 func TestRemoveCppStyleComments(t *testing.T) {
-	res := string(RemoveCppStyleComments([]byte(test_rule)))
+	res := string(removeCppStyleComments([]byte(test_rule)))
 
 	if strings.Contains(res, test_cppstyle) {
 		t.Error("Unexpected Cpp-Style comment found")
@@ -87,7 +85,7 @@ func TestRemoveCppStyleComments(t *testing.T) {
 }
 
 func TestRemoveCAndCppComments(t *testing.T) {
-	res := string(RemoveCAndCppComments(test_rule))
+	res := string(removeCAndCppComments(test_rule))
 
 	if strings.Contains(res, test_cstyle) {
 		t.Error("Unexpected C-Style comment found")
@@ -107,6 +105,7 @@ func TestRemoveCAndCppCommentsFile(t *testing.T) {
 	if err != nil {
 		t.Error("Unexpected error while creating temp file")
 	}
+	defer os.Remove(f.Name())
 
 	_, err = f.WriteString(test_rule)
 	if err != nil {
@@ -115,7 +114,7 @@ func TestRemoveCAndCppCommentsFile(t *testing.T) {
 
 	fname := f.Name()
 
-	resByte, err := RemoveCAndCppCommentsFile(fname)
+	resByte, err := removeCAndCppCommentsFile(fname)
 	if err != nil {
 		t.Errorf("Expecting no errors but found: %s", err.Error())
 	}
@@ -134,13 +133,13 @@ func TestRemoveCAndCppCommentsFile(t *testing.T) {
 		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
 	}
 
-	resByte, err = RemoveCAndCppCommentsFile(fname + "_")
+	resByte, err = removeCAndCppCommentsFile(fname + "_")
 	if err == nil {
 		t.Error("Expecting error but none found")
 	}
 }
 
-func Test_loadFiles(t *testing.T) {
+func TestLoadFiles(t *testing.T) {
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
 		log.Fatal(err)
@@ -189,7 +188,7 @@ func Test_loadFiles(t *testing.T) {
 	}
 }
 
-func Test_cleanUpLine(t *testing.T) {
+func TestCleanUpLine(t *testing.T) {
 	testCase := []struct {
 		Line   string
 		Result string
@@ -218,7 +217,7 @@ func Test_cleanUpLine(t *testing.T) {
 	}
 }
 
-func Test_parseRuleAndVarsSRC(t *testing.T) {
+func TestParseRuleAndVarsSRC(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
@@ -236,8 +235,8 @@ func Test_parseRuleAndVarsSRC(t *testing.T) {
 		Result: `src = "$any_addr"`,
 	}}
 
-	var vars map[string][]string
-	vars = make(map[string][]string)
+	var vars map[string]string
+	vars = make(map[string]string)
 
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
@@ -247,7 +246,7 @@ func Test_parseRuleAndVarsSRC(t *testing.T) {
 	}
 }
 
-func Test_parseRuleAndVarsDST(t *testing.T) {
+func TestParseRuleAndVarsDST(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
@@ -265,8 +264,8 @@ func Test_parseRuleAndVarsDST(t *testing.T) {
 		Result: `dst = "$any_addr"`,
 	}}
 
-	var vars map[string][]string
-	vars = make(map[string][]string)
+	var vars map[string]string
+	vars = make(map[string]string)
 
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
@@ -276,7 +275,7 @@ func Test_parseRuleAndVarsDST(t *testing.T) {
 	}
 }
 
-func Test_parseRuleAndVarsSRC_PORT(t *testing.T) {
+func TestParseRuleAndVarsSRC_PORT(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
@@ -294,8 +293,8 @@ func Test_parseRuleAndVarsSRC_PORT(t *testing.T) {
 		Result: `src_port = "$any_port"`,
 	}}
 
-	var vars map[string][]string
-	vars = make(map[string][]string)
+	var vars map[string]string
+	vars = make(map[string]string)
 
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
@@ -305,7 +304,7 @@ func Test_parseRuleAndVarsSRC_PORT(t *testing.T) {
 	}
 }
 
-func Test_parseRuleAndVarsDST_PORT(t *testing.T) {
+func TestParseRuleAndVarsDST_PORT(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
@@ -323,8 +322,8 @@ func Test_parseRuleAndVarsDST_PORT(t *testing.T) {
 		Result: `dst_port = "$any_port"`,
 	}}
 
-	var vars map[string][]string
-	vars = make(map[string][]string)
+	var vars map[string]string
+	vars = make(map[string]string)
 
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
@@ -334,7 +333,7 @@ func Test_parseRuleAndVarsDST_PORT(t *testing.T) {
 	}
 }
 
-func Test_parseRuleAndVars(t *testing.T) {
+func TestParseRuleAndVars(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
@@ -349,12 +348,12 @@ func Test_parseRuleAndVars(t *testing.T) {
 		Result: `src_port = "80,443"`,
 	}}
 
-	var vars map[string][]string
-	vars = make(map[string][]string)
+	var vars map[string]string
+	vars = make(map[string]string)
 
-	vars["$tcp"] = []string{"TCP"}
-	vars["$home_net"] = []string{"10.0.0.0/8"}
-	vars["$http_ports"] = []string{"80", "443"}
+	vars["$tcp"] = "TCP"
+	vars["$home_net"] = "10.0.0.0/8"
+	vars["$http_ports"] = "80,443"
 
 	for idx, tc := range testCase {
 		res := parseRuleAndVars(tc.Rule, vars)
@@ -364,7 +363,7 @@ func Test_parseRuleAndVars(t *testing.T) {
 	}
 }
 
-func Test_splitRules(t *testing.T) {
+func TestSplitRules(t *testing.T) {
 	testCase := []struct {
 		Rules  string
 		Result []string
@@ -387,6 +386,15 @@ func Test_splitRules(t *testing.T) {
 			
 		}
 		rule test2 {}`,
+		Result: []string{`rule test1 {}`, `rule test2 {}`},
+	}, {
+		Rules: `rule test1 {
+			
+		}
+
+		rule test2 {
+			
+		}`,
 		Result: []string{`rule test1 {}`, `rule test2 {}`},
 	}}
 

@@ -29,7 +29,7 @@ LDFLAGS=-ldflags "-X ${PACKAGE}.AppName=${APPNAME} -X ${PACKAGE}.Version=${VERSI
 
 default: build
 
-all: clean build_all install
+all: clean install
 
 build:
 	go build ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
@@ -49,4 +49,4 @@ docs:
 clean:
 	rm -rf ${BINDIR}
 
-.PHONY: check clean build install build_all all docs
+.PHONY: check clean build install all docs

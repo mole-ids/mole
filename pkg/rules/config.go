@@ -14,6 +14,10 @@
 package rules
 
 import (
+	"path/filepath"
+
+	"github.com/mole-ids/mole/internal/merr"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -24,22 +28,53 @@ type Config struct {
 	// RulesFolder path to a directory with a set of Yara rules
 	RulesFolder string
 	// Vars vaiables used for overwriting values in the Yara rules meta section
-	Vars map[string][]string
+	Vars map[string]string
 }
 
 // InitConfig initializes rules package
 func InitConfig() (*Config, error) {
+	var err error
 	config := &Config{
 		RulesIndex:  viper.GetString("rules.rules_index"),
 		RulesFolder: viper.GetString("rules.rules_dir"),
-		Vars:        viper.GetStringMapStringSlice("rules.variables"),
+		Vars:        viper.GetStringMapString("rules.variables"),
+	}
+
+	cfgFile := viper.ConfigFileUsed()
+
+	if cfgFile != "" {
+		// Options come from config file
+		base := filepath.Dir(cfgFile)
+		if config.RulesFolder != "" {
+			config.RulesFolder = filepath.Join(base, config.RulesFolder)
+		}
+		if config.RulesIndex != "" {
+			config.RulesIndex = filepath.Join(base, config.RulesIndex)
+		}
+
+	} else {
+		// Otherwise, we need values to be absolute path
+		if config.RulesFolder != "" && !filepath.IsAbs(config.RulesFolder) {
+			err = merr.ErrRuleFolderIsNotAbs
+		}
+		if config.RulesIndex != "" && !filepath.IsAbs(config.RulesIndex) {
+			if err != nil {
+				err = errors.Wrap(err, merr.IndexFileIsNotAbsMsg)
+			} else {
+				err = merr.ErrIndexFileIsNotAbs
+			}
+		}
+	}
+
+	if config.RulesFolder == "" && config.RulesIndex == "" {
+		err = errors.Wrap(err, merr.ErrIndexOrRuleFolderRequiredMsg)
 	}
 
 	// Mole overwritten variables
-	config.Vars["$tcp"] = []string{"TCP"}
-	config.Vars["$udp"] = []string{"UDP"}
-	config.Vars["$any_addr"] = []string{"0.0.0.0/0"}
-	config.Vars["$any_port"] = []string{"0:65535"}
+	config.Vars["$tcp"] = "TCP"
+	config.Vars["$udp"] = "UDP"
+	config.Vars["$any_addr"] = "0.0.0.0/0"
+	config.Vars["$any_port"] = "0:65535"
 
-	return config, nil
+	return config, err
 }

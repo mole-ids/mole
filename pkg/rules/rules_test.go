@@ -16,6 +16,7 @@ package rules
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -23,20 +24,37 @@ import (
 )
 
 func writeIndex(dir, iname, rname string) {
-	i := fmt.Sprintf(`include "%s"`, rname)
+	var err error
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating test directory:", err.Error())
+	}
+	i := fmt.Sprintf("include \"%s\"", rname)
 	ioutil.WriteFile(filepath.Join(dir, iname), []byte(i), 0655)
+
+	fmt.Printf("Writing index %s with content: \n%s\n", filepath.Join(dir, iname), i)
 }
 
 func writeRules(dir, name, content string) {
+	var err error
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating test directory:", err.Error())
+	}
 	ioutil.WriteFile(filepath.Join(dir, name), []byte(content), 0655)
+
+	fmt.Printf("Writing rule file %s with content:\n%s\n", filepath.Join(dir, name), content)
 }
 
 func TestNewManager(t *testing.T) {
 	var err error
 
+	startup()
+	initViper(test_config, filepath.Join(test_dir, test_rulesDir))
+
 	_, err = NewManager()
 	if err != nil {
-		t.Errorf("Unexpected error: %s", err.Error())
+		t.Errorf("Expected no error but found: %s", err.Error())
 	}
 
 }
@@ -45,7 +63,9 @@ func TestLoadRulesByDir(t *testing.T) {
 	testCase := []struct {
 		cfg      string
 		rFolder  string
+		rfErr    bool
 		rIndex   string
+		riErr    bool
 		rName    string
 		rule     string
 		rawRules int
@@ -55,43 +75,44 @@ func TestLoadRulesByDir(t *testing.T) {
 rules:
   rules_dir: %s
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
 		rFolder:  "",
+		rfErr:    true,
 		rIndex:   "",
+		riErr:    true,
 		rName:    "",
 		rule:     "",
 		rawRules: 0,
-		err:      false,
+		err:      true,
 	}, {
 		cfg: `
 rules:
   rules_dir: %s
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
-		rFolder:  test_dir,
+		rFolder:  test_rulesDir,
+		rfErr:    false,
 		rIndex:   test_rulesIndex,
+		riErr:    false,
 		rName:    test_rulesName,
 		rule:     `rule R { condition: $ }`,
 		rawRules: 1,
 		err:      false,
 	}}
 
+	startup()
 	viper.Reset()
 
 	for idx, tc := range testCase {
-		if len(tc.rule) > 0 {
-			writeRules(tc.rFolder, tc.rName, tc.rule)
-		}
 		if idx != 0 {
-			initViper(fmt.Sprintf(tc.cfg, tc.rFolder))
+			initViper(fmt.Sprintf(tc.cfg, tc.rFolder), test_dir)
+		}
+		if len(tc.rule) > 0 {
+			writeRules(filepath.Join(test_dir, tc.rFolder), tc.rName, tc.rule)
 		}
 
 		ma, err := NewManager()
@@ -104,25 +125,20 @@ rules:
 			t.Errorf("[%d] Expecting no error but found: %s", idx, err.Error())
 		}
 
-		if ma.Config.RulesFolder != tc.rFolder {
-			t.Errorf("[%d] Expecting RulesFolder to be %s, but found %s", idx, tc.rFolder, ma.Config.RulesFolder)
-		}
+		if !tc.err {
+			if ma.Config.RulesFolder != filepath.Join(test_dir, tc.rFolder) {
+				t.Errorf("[%d] Expecting RulesFolder to be %s, but found %s", idx, filepath.Join(test_dir, tc.rFolder), ma.Config.RulesFolder)
+			}
 
-		if ma.Config.RulesIndex != "" {
-			t.Errorf("[%d] Expecting RulesIndex to be '', but found %s", idx, ma.Config.RulesIndex)
-		}
+			if ma.Config.RulesIndex != "" {
+				t.Errorf("[%d] Expecting RulesIndex to be '', but found %s", idx, ma.Config.RulesIndex)
+			}
 
-		if len(ma.RawRules) != 0 {
-			t.Errorf("[%d] Expecting no RawRules, but found %d", idx, len(ma.RawRules))
+			if len(ma.RawRules) != tc.rawRules {
+				t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
+			}
 		}
-
-		if idx != 0 {
-			ma.LoadRulesByDir(tc.rFolder)
-		}
-
-		if len(ma.RawRules) != tc.rawRules {
-			t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
-		}
+		shutdown()
 	}
 }
 
@@ -142,30 +158,26 @@ func TestLoadRulesByIndex(t *testing.T) {
 rules:
   rules_index: %s/index.yar
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
-		rFolder:        "",
-		rIndex:         ".",
+		rFolder:        ".",
+		rIndex:         "",
 		rName:          "",
 		rule:           "",
 		rawRules:       0,
 		checkIndex:     true,
-		err:            false,
+		err:            true,
 		errLoadingFile: false,
 	}, {
 		cfg: `
 rules:
   rules_index: %s/index.yar
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
-		rFolder:        test_dir,
+		rFolder:        ".",
 		rIndex:         test_rulesIndex,
 		rName:          test_rulesName,
 		rule:           `rule R { condition: $ }`,
@@ -176,14 +188,28 @@ rules:
 	}, {
 		cfg: `
 rules:
+  rules_index: %s/index.yar
+  variables:
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
+`,
+		rFolder:        ".",
+		rIndex:         test_rulesIndex,
+		rName:          test_rulesName,
+		rule:           `rule R { condition: $ } rule R1 { condition: $ }`,
+		rawRules:       2,
+		checkIndex:     true,
+		err:            false,
+		errLoadingFile: false,
+	}, {
+		cfg: `
+rules:
   rules_index: %s/index.yar1
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
-		rFolder:        test_dir,
+		rFolder:        ".",
 		rIndex:         "index.ERROR",
 		rName:          test_rulesName,
 		rule:           `rule R { condition: $ }`,
@@ -193,14 +219,15 @@ rules:
 		errLoadingFile: true,
 	}}
 
+	startup()
 	viper.Reset()
 
 	for idx, tc := range testCase {
-		writeIndex(tc.rFolder, tc.rIndex, tc.rName)
-		writeRules(tc.rFolder, tc.rName, tc.rule)
 		if idx != 0 {
-			initViper(fmt.Sprintf(tc.cfg, tc.rFolder))
+			initViper(fmt.Sprintf(tc.cfg, tc.rFolder), filepath.Join(test_dir, tc.rFolder))
 		}
+		writeIndex(test_dir, tc.rIndex, tc.rName)
+		writeRules(test_dir, tc.rName, tc.rule)
 
 		ma, err := NewManager()
 
@@ -212,31 +239,20 @@ rules:
 			t.Errorf("[%d] Expecting no error but found: %s", idx, err.Error())
 		}
 
-		if ma.Config.RulesFolder != "" {
-			t.Errorf("[%d] Expecting RulesFolder to be '', but found %s", idx, ma.Config.RulesFolder)
-		}
-
-		if tc.checkIndex && filepath.Base(ma.Config.RulesIndex) != tc.rIndex {
-			t.Errorf("[%d] Expecting RulesIndex to be %s, but found %s", idx, tc.rIndex, filepath.Base(ma.Config.RulesIndex))
-		}
-
-		if len(ma.RawRules) != 0 {
-			t.Errorf("[%d] Expecting no RawRules, but found %d", idx, len(ma.RawRules))
-		}
-
-		if idx != 0 {
-			err = ma.LoadRulesByIndex(viper.GetString("rules.rules_index"))
-			if tc.errLoadingFile && err == nil {
-				t.Errorf("[%d] Expecting error when loading rules by index, but none found", idx)
+		if !tc.err {
+			if ma.Config.RulesFolder != "" {
+				t.Errorf("[%d] Expecting RulesFolder to be '', but found %s", idx, ma.Config.RulesFolder)
 			}
-			if !tc.errLoadingFile && err != nil {
-				t.Errorf("[%d] Expecting no error when loading rules by index, but found: %s", idx, err.Error())
+
+			if tc.checkIndex && filepath.Base(ma.Config.RulesIndex) != tc.rIndex {
+				t.Errorf("[%d] Expecting RulesIndex to be %s, but found %s", idx, tc.rIndex, filepath.Base(ma.Config.RulesIndex))
+			}
+
+			if len(ma.RawRules) != tc.rawRules {
+				t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
 			}
 		}
-
-		if len(ma.RawRules) != tc.rawRules {
-			t.Errorf("[%d] Expecting to have %d RawRules, but found %d", idx, tc.rawRules, len(ma.RawRules))
-		}
+		shutdown()
 	}
 }
 
@@ -252,28 +268,25 @@ rules:
   rules_dir: ./rules
   rules_index: index.yar
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
 		err: false,
 	}, {
 		cfg: `
 rules:
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `,
 		err: true,
 	}}
 
+	startup()
 	for idx, tc := range testCase {
-		initViper(tc.cfg)
+		initViper(tc.cfg, filepath.Join(test_dir, test_rulesDir))
 
-		_, err = NewManagerW()
+		_, err = NewManager()
 		if tc.err && err == nil {
 			t.Errorf("[%d] Expecting error but none found", idx)
 		}
@@ -282,5 +295,5 @@ rules:
 			t.Errorf("[%d] Unexpected error: %s", idx, err.Error())
 		}
 	}
-
+	shutdown()
 }

@@ -26,35 +26,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// RemoveCStyleComments removes C-Style comments from a byte arry
-func RemoveCStyleComments(content []byte) []byte {
-	// http://blog.ostermiller.org/find-comment
-	ccmt := regexp.MustCompile(`/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/`)
-	return ccmt.ReplaceAll(content, []byte(""))
-}
-
-// RemoveCppStyleComments removes C++-Style comments from a byte arry
-func RemoveCppStyleComments(content []byte) []byte {
-	cppcmt := regexp.MustCompile(`//.*`)
-	return cppcmt.ReplaceAll(content, []byte(""))
-}
-
-// RemoveCAndCppCommentsFile removes either C-Style or C++Style comments from
-// a file
-func RemoveCAndCppCommentsFile(srcpath string) ([]byte, error) {
-	b, err := ioutil.ReadFile(srcpath)
-	if err != nil {
-		return b, errors.Wrap(err, merr.WhileReadingFileMsg)
-	}
-	return RemoveCppStyleComments(RemoveCStyleComments(b)), nil
-}
-
-// RemoveCAndCppComments removes either C-Style or C++Style comments from
-// a file
-func RemoveCAndCppComments(src string) []byte {
-	return RemoveCppStyleComments(RemoveCStyleComments([]byte(src)))
-}
-
 // GetRuleMetaInfo returns the rule metadata
 func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 	metarule = make(types.MetaRule)
@@ -66,6 +37,35 @@ func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 		}
 	}
 	return metarule, nil
+}
+
+// removeCStyleComments removes C-Style comments from a byte arry
+func removeCStyleComments(content []byte) []byte {
+	// http://blog.ostermiller.org/find-comment
+	ccmt := regexp.MustCompile(`/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*+/`)
+	return ccmt.ReplaceAll(content, []byte(""))
+}
+
+// removeCppStyleComments removes C++-Style comments from a byte arry
+func removeCppStyleComments(content []byte) []byte {
+	cppcmt := regexp.MustCompile(`//.*`)
+	return cppcmt.ReplaceAll(content, []byte(""))
+}
+
+// removeCAndCppCommentsFile removes either C-Style or C++Style comments from
+// a file
+func removeCAndCppCommentsFile(srcpath string) ([]byte, error) {
+	b, err := ioutil.ReadFile(srcpath)
+	if err != nil {
+		return b, errors.Wrap(err, merr.WhileReadingFileMsg)
+	}
+	return removeCppStyleComments(removeCStyleComments(b)), nil
+}
+
+// removeCAndCppComments removes either C-Style or C++Style comments from
+// a file
+func removeCAndCppComments(src string) []byte {
+	return removeCppStyleComments(removeCStyleComments([]byte(src)))
 }
 
 // loadFiles loads files from path
@@ -80,7 +80,7 @@ func cleanUpLine(line string) string {
 }
 
 // parseRuleAndVars replace valiables by its final value
-func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
+func parseRuleAndVars(rule string, vars map[string]string) (newRule string) {
 	// Pre-processing rule to replace some vars
 	rule = srcAnyPreprocRE.ReplaceAllString(rule, "src = \"$$any_addr\"")
 	rule = srcPortAnyPreprocRE.ReplaceAllString(rule, "src_port = \"$$any_port\"")
@@ -91,7 +91,7 @@ func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
 		var res string = v
 		if len(vars) > 0 {
 			if val, ok := vars[strings.ToLower(v)]; ok {
-				res = strings.Join(val, ",")
+				res = val
 			}
 		}
 		return res
@@ -100,10 +100,12 @@ func parseRuleAndVars(rule string, vars map[string][]string) (newRule string) {
 
 // splitRules this utility splits Yara rules so it can be processed separately
 func splitRules(rulesString string) []string {
+	// TODO: this need to be improved. At the moment this can be considered as
+	// a workarround. It should be a better way to split up the rules one by one
 	var rules, rulesTmp []string
 	var rulesTmpString string
 
-	rulesTmpString = string(RemoveCAndCppComments(rulesString))
+	rulesTmpString = string(removeCAndCppComments(rulesString))
 
 	rules = splitRE.Split(rulesTmpString, -1)
 	if len(rules) == 1 {
@@ -122,4 +124,11 @@ func splitRules(rulesString string) []string {
 	}
 
 	return rulesTmp
+}
+
+func getPathPrefix(b, p string) (string, error) {
+	if b == "" {
+		return filepath.Abs(p)
+	}
+	return filepath.Abs(filepath.Join(b, p))
 }

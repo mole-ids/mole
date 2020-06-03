@@ -25,6 +25,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	test_dir string
+)
+
 const (
 	test_rulesDir   = "./rules"
 	test_rulesIndex = "index.yar"
@@ -52,61 +56,51 @@ rule ExampleRuleC
 `
 	test_config = `
 rules:
-  rules_dir: ./rules
-  rules_index: index.yar
+  rules_dir: rules
+  rules_index: rules/index.yar
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `
 	test_config_index = `
 rules:
   rules_index: %s/index.yar
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `
 
 	test_config_dir = `
 rules:
   rules_dir: %s/rules
   variables:
-    $TCP:
-      - tcp
-    $HOME_NET:
-      - "10.0.0.0/8"
+    $TCP: tcp
+    $HOME_NET: "10.0.0.0/8"
 `
 )
 
-var (
-	test_dir string
-)
-
-func init() {
-	var err error
-	logger.New()
-	test_dir, err = ioutil.TempDir("", "")
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func initViper(cfg string) {
+func initViper(cfg, path string) {
 	var err error
 	name := "mole"
 	ext := "yml"
 	fname := name + "." + ext
-	fpath := filepath.Join(test_dir, fname)
 
-	ioutil.WriteFile(fpath, []byte(cfg), 0655)
+	fpath := filepath.Join(path, fname)
 
+	err = os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating test directory:", err.Error())
+	}
+
+	err = ioutil.WriteFile(fpath, []byte(cfg), 0655)
+	if err != nil {
+		fmt.Println("Error crating mole.yml")
+		fmt.Println("Err: ", err.Error())
+	}
 	viper.Reset()
 	viper.SetConfigType("yaml")
 	viper.SetConfigName(name)
-	viper.AddConfigPath(test_dir)
+	viper.AddConfigPath(path)
 
 	err = viper.ReadInConfig()
 	if err != nil {
@@ -115,9 +109,19 @@ func initViper(cfg string) {
 }
 
 func TestMain(m *testing.M) {
+	startup()
 	code := m.Run()
 	shutdown()
 	os.Exit(code)
+}
+
+func startup() {
+	var err error
+	logger.New()
+	test_dir, err = ioutil.TempDir("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func shutdown() {

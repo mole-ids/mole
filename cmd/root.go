@@ -55,7 +55,7 @@ func Execute() {
 func init() {
 	// Root flags configuration
 	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().StringVar(&configFile, "config", "mole.yml", "Config file")
+	RootCmd.PersistentFlags().StringVar(&configFile, "config", "", "Config file")
 
 	RootCmd.PersistentFlags().String("logTo", "", "Log to file")
 	RootCmd.PersistentFlags().String("logLevel", "info", "Log level")
