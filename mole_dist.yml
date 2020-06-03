@@ -17,9 +17,3 @@ rules:
 logger:
     log_to: /dev/stdout
     log_level: "info"
-
-debug:
-  dot:
-    output: stdout
-    rules_dir: ./rules
-    rules_index:

@@ -64,13 +64,13 @@ func New() (motor *Engine, err error) {
 	}
 
 	// Get the rules manager
-	motor.RulesManager, err = rules.NewManagerW()
+	motor.RulesManager, err = rules.NewManager()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to initiate rules manager")
 	}
 
 	// Build a Decision tree and the RuleMap
-	motor.RuleMap, err = tree.FromRules(motor.RulesManager.RawRules)
+	motor.RuleMap, err = tree.FromRules(motor.RulesManager.GetRawRules())
 	if err != nil {
 		return nil, errors.Wrap(err, "while generating the Decision tree")
 	}

@@ -3,7 +3,6 @@ module github.com/mole-ids/mole
 go 1.14
 
 require (
-	github.com/emicklei/dot v0.10.2
 	github.com/google/gopacket v1.1.17
 	github.com/hillu/go-yara v1.2.2
 	github.com/oklog/ulid v1.3.1

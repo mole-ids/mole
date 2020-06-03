@@ -14,6 +14,7 @@
 package rules
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -33,8 +34,8 @@ type Manager struct {
 	RawRules []string
 }
 
-// NewManagerW returns a new rules manager
-func NewManagerW() (manager *Manager, err error) {
+// NewManager returns a new rules manager
+func NewManager() (manager *Manager, err error) {
 	manager = &Manager{}
 	manager.Config, err = InitConfig()
 
@@ -49,18 +50,6 @@ func NewManagerW() (manager *Manager, err error) {
 	}
 
 	logger.Log.Info(logger.YaraRulesInitiatedMsg)
-
-	return manager, err
-}
-
-// NewManager returns a new rules manager
-func NewManager() (manager *Manager, err error) {
-	manager = &Manager{}
-	manager.Config, err = InitConfig()
-
-	if err != nil {
-		return nil, errors.Wrap(err, merr.InitRulesManagerMsg)
-	}
 
 	return manager, err
 }
@@ -90,11 +79,13 @@ func (ma *Manager) LoadRules() (err error) {
 	}
 
 	if ma.Config.RulesIndex != "" {
-		ma.LoadRulesByIndex(ma.Config.RulesIndex)
+		logger.Log.Infof(logger.RulesIndexFileMsg, ma.Config.RulesIndex)
+		ma.loadRulesByIndex()
 	}
 
 	if ma.Config.RulesFolder != "" {
-		ma.LoadRulesByDir(ma.Config.RulesFolder)
+		logger.Log.Infof(logger.RulesFolderMsg, ma.Config.RulesFolder)
+		ma.loadRulesByDir()
 	}
 
 	logger.Log.Infof(logger.YaraRulesLoadedMsg, len(ma.RawRules))
@@ -102,10 +93,11 @@ func (ma *Manager) LoadRules() (err error) {
 	return nil
 }
 
-// LoadRulesByIndex loads the rules defined in the `idxFile`
-func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
+// loadRulesByIndex loads the rules defined in the `idxFile`
+func (ma *Manager) loadRulesByIndex() (err error) {
+	idxFile := ma.Config.RulesIndex
 	// Removing comments from the file
-	res, err := RemoveCAndCppCommentsFile(idxFile)
+	res, err := removeCAndCppCommentsFile(idxFile)
 	if err != nil {
 		return errors.Wrap(err, merr.WhileLoadingRulesMsg)
 	}
@@ -115,10 +107,10 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 
 	lines := strings.Split(cleanIndex, "\n")
 
+	fmt.Printf("index file: %s\ncontent: %s\n", idxFile, cleanIndex)
+
 	// Get the base path of the index file
 	base := filepath.Dir(idxFile)
-	// Get the absolute path for the index file from its base path
-	absBase, err := filepath.Abs(base)
 
 	if err != nil {
 		return errors.Wrapf(err, merr.AbsIndexPathMsg, idxFile)
@@ -128,7 +120,7 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 		line := cleanUpLine(iline)
 
 		// Get the final rule path
-		rulePath := filepath.Join(absBase, line)
+		rulePath := filepath.Join(base, line)
 
 		// Read the rule content based on the rule file real file
 		ruleString, err := ioutil.ReadFile(rulePath)
@@ -142,8 +134,9 @@ func (ma *Manager) LoadRulesByIndex(idxFile string) (err error) {
 	return nil
 }
 
-// LoadRulesByDir loads the rules (files *.yar) placed in `rulesFolder`
-func (ma *Manager) LoadRulesByDir(rulesFolder string) (err error) {
+// loadRulesByDir loads the rules (files *.yar) placed in `rulesFolder`
+func (ma *Manager) loadRulesByDir() (err error) {
+	rulesFolder := ma.Config.RulesFolder
 	files, err := loadFiles(rulesFolder)
 	if err != nil {
 		return errors.Wrap(err, merr.OpenRulesDirMsg)
@@ -168,4 +161,9 @@ func (ma *Manager) readRuleByRule(rule []byte) {
 		newRule := parseRuleAndVars(rule, ma.Config.Vars)
 		ma.RawRules = append(ma.RawRules, newRule)
 	}
+}
+
+// GetRawRules retuns the loaded rules in raw format
+func (ma *Manager) GetRawRules() []string {
+	return ma.RawRules
 }
