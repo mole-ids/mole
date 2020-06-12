@@ -46,6 +46,7 @@ var (
 // FromRules builds the Decision tree from scratch and returns types.RuleMapScanner
 // which is a map that define what Yara rule set execute for each id
 func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
+	logger.Log.Info(logger.RuleMapBuiltMsg)
 	// initialize the result map
 	ruleMap = make(types.RuleMapScanner)
 	// used as a middleware for extracting ara rule Metadata. These rules are
@@ -58,7 +59,10 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 	// Loop though the whole list of rules
 	for _, rule := range rulesList {
 		// compile each rule
-		cr := yara.MustCompile(rule, map[string]interface{}{})
+		cr, err := yara.Compile(rule, map[string]interface{}{})
+		if err != nil {
+			return nil, errors.Wrap(err, merr.CompileYaraRuleErrorMsg)
+		}
 
 		// crules should only contain one rule
 		crule := cr.GetRules()
@@ -67,9 +71,10 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		// Extracting rule metadata
 		meta, err := rules.GetRuleMetaInfo(yrule)
 		if err != nil {
-			return nil, errors.Errorf(merr.YaraRuleMetadataMsg, yrule.Identifier())
+			return nil, errors.Wrapf(err, merr.YaraRuleMetadataMsg, yrule.Identifier())
 		}
 
+		logger.Log.Debugf("adding rule: proto:%s | src:%s | sport:%s | dst:%s | dport:%s", meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
 		// Insert the node according to its metadata
 		idNode, _, err := insertRule(Decision, 0, types.Keywords, meta)
 		if err != nil {
@@ -107,8 +112,6 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 			return nil, merr.ErrYaraNewScanner
 		}
 	}
-
-	logger.Log.Info(logger.RuleMapBuiltMsg)
 	return ruleMap, nil
 }
 
@@ -251,7 +254,9 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 	bt.Backtrack(Decision.Children)
 
 	// If finally there is a solution, just returned it
+	logger.Log.Debugf("<<< Got solution: %t", bt.HasSolution())
 	if bt.HasSolution() {
+
 		return bt.GetResult(), nil
 	}
 

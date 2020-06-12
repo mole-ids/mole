@@ -36,6 +36,19 @@ func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 			metarule[meta.Identifier], _ = types.GetNodeValue(meta.Identifier, meta.Value)
 		}
 	}
+
+	for k, v := range metarule {
+		if v == nil {
+			return metarule, errors.Errorf(merr.BadRuleMetadataMsg, k)
+		}
+	}
+
+	for _, k := range types.Keywords {
+		if _, ok := metarule[k]; !ok {
+			return metarule, errors.Errorf(merr.KeywordsNotMeetMsg, k)
+		}
+	}
+
 	return metarule, nil
 }
 
@@ -83,9 +96,15 @@ func cleanUpLine(line string) string {
 func parseRuleAndVars(rule string, vars map[string]string) (newRule string) {
 	// Pre-processing rule to replace some vars
 	rule = srcAnyPreprocRE.ReplaceAllString(rule, "src = \"$$any_addr\"")
-	rule = srcPortAnyPreprocRE.ReplaceAllString(rule, "src_port = \"$$any_port\"")
+	rule = srcPortAnyPreprocRE.ReplaceAllString(rule, "sport = \"$$any_port\"")
 	rule = dstAnyPreprocRE.ReplaceAllString(rule, "dst = \"$$any_addr\"")
-	rule = dstPortAnyPreprocRE.ReplaceAllString(rule, "dst_port = \"$$any_port\"")
+	rule = dstPortAnyPreprocRE.ReplaceAllString(rule, "dport = \"$$any_port\"")
+
+	rule = protoCapPrepocRE.ReplaceAllStringFunc(rule, func(v string) string {
+		return protoCapPrepocInternalRE.ReplaceAllStringFunc(v, func(vv string) string {
+			return strings.ToLower(vv)
+		})
+	})
 
 	return varRe.ReplaceAllStringFunc(rule, func(v string) string {
 		var res string = v

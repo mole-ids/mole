@@ -14,11 +14,11 @@
 package rules
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/pkg/logger"
@@ -49,8 +49,6 @@ func NewManager() (manager *Manager, err error) {
 		return nil, errors.Wrap(err, merr.LoadingRulesMsg)
 	}
 
-	logger.Log.Info(logger.YaraRulesInitiatedMsg)
-
 	return manager, err
 }
 
@@ -66,10 +64,12 @@ var (
 	splitRE = regexp.MustCompile(`(?im)}\s*rule`)
 
 	// the following regexp are used to pre-procces the rules
-	srcAnyPreprocRE     = regexp.MustCompile(`src\s*=\s*"any"`)
-	srcPortAnyPreprocRE = regexp.MustCompile(`src_port\s*=\s*"any"`)
-	dstAnyPreprocRE     = regexp.MustCompile(`dst\s*=\s*"any"`)
-	dstPortAnyPreprocRE = regexp.MustCompile(`dst_port\s*=\s*"any"`)
+	srcAnyPreprocRE          = regexp.MustCompile(`src\s*=\s*"any"`)
+	srcPortAnyPreprocRE      = regexp.MustCompile(`sport\s*=\s*"any"`)
+	dstAnyPreprocRE          = regexp.MustCompile(`dst\s*=\s*"any"`)
+	dstPortAnyPreprocRE      = regexp.MustCompile(`dport\s*=\s*"any"`)
+	protoCapPrepocRE         = regexp.MustCompile(`proto\s*=\s*"(\w+)"`)
+	protoCapPrepocInternalRE = regexp.MustCompile(`"\w+"`)
 )
 
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
@@ -78,6 +78,7 @@ func (ma *Manager) LoadRules() (err error) {
 		return merr.ErrRuleOrIndexNotDefined
 	}
 
+	start := time.Now()
 	if ma.Config.RulesIndex != "" {
 		logger.Log.Infof(logger.RulesIndexFileMsg, ma.Config.RulesIndex)
 		ma.loadRulesByIndex()
@@ -88,7 +89,8 @@ func (ma *Manager) LoadRules() (err error) {
 		ma.loadRulesByDir()
 	}
 
-	logger.Log.Infof(logger.YaraRulesLoadedMsg, len(ma.RawRules))
+	elapsed := time.Since(start)
+	logger.Log.Infof(logger.YaraRulesLoadedMsg, len(ma.RawRules), elapsed.Seconds())
 
 	return nil
 }
@@ -106,8 +108,6 @@ func (ma *Manager) loadRulesByIndex() (err error) {
 	cleanIndex = removeBlanksRe.ReplaceAllString(strings.TrimSpace(cleanIndex), "\n")
 
 	lines := strings.Split(cleanIndex, "\n")
-
-	fmt.Printf("index file: %s\ncontent: %s\n", idxFile, cleanIndex)
 
 	// Get the base path of the index file
 	base := filepath.Dir(idxFile)

@@ -275,22 +275,22 @@ func TestParseRuleAndVarsDST(t *testing.T) {
 	}
 }
 
-func TestParseRuleAndVarsSRC_PORT(t *testing.T) {
+func TestParseRuleAndVarsSPORT(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
 	}{{
-		Rule:   `src_port="any"`,
-		Result: `src_port = "$any_port"`,
+		Rule:   `sport="any"`,
+		Result: `sport = "$any_port"`,
 	}, {
-		Rule:   `src_port = "any"`,
-		Result: `src_port = "$any_port"`,
+		Rule:   `sport = "any"`,
+		Result: `sport = "$any_port"`,
 	}, {
-		Rule: `src_port	= "any"`,
-		Result: `src_port = "$any_port"`,
+		Rule: `sport	= "any"`,
+		Result: `sport = "$any_port"`,
 	}, {
-		Rule: `src_port	=	"any"`,
-		Result: `src_port = "$any_port"`,
+		Rule: `sport	=	"any"`,
+		Result: `sport = "$any_port"`,
 	}}
 
 	var vars map[string]string
@@ -304,22 +304,22 @@ func TestParseRuleAndVarsSRC_PORT(t *testing.T) {
 	}
 }
 
-func TestParseRuleAndVarsDST_PORT(t *testing.T) {
+func TestParseRuleAndVarsDPORT(t *testing.T) {
 	testCase := []struct {
 		Rule   string
 		Result string
 	}{{
-		Rule:   `dst_port="any"`,
-		Result: `dst_port = "$any_port"`,
+		Rule:   `dport="any"`,
+		Result: `dport = "$any_port"`,
 	}, {
-		Rule:   `dst_port = "any"`,
-		Result: `dst_port = "$any_port"`,
+		Rule:   `dport = "any"`,
+		Result: `dport = "$any_port"`,
 	}, {
-		Rule: `dst_port	= "any"`,
-		Result: `dst_port = "$any_port"`,
+		Rule: `dport	= "any"`,
+		Result: `dport = "$any_port"`,
 	}, {
-		Rule: `dst_port	=	"any"`,
-		Result: `dst_port = "$any_port"`,
+		Rule: `dport	=	"any"`,
+		Result: `dport = "$any_port"`,
 	}}
 
 	var vars map[string]string
@@ -344,8 +344,8 @@ func TestParseRuleAndVars(t *testing.T) {
 		Rule:   `src = "$HOME_NET"`,
 		Result: `src = "10.0.0.0/8"`,
 	}, {
-		Rule:   `src_port = "$HTTP_PORTS"`,
-		Result: `src_port = "80,443"`,
+		Rule:   `sport = "$HTTP_PORTS"`,
+		Result: `sport = "80,443"`,
 	}}
 
 	var vars map[string]string
@@ -417,9 +417,9 @@ func TestGetRuleMetaInfo(t *testing.T) {
 meta:
 	proto = "tcp"
 	src = "1.1.1.1"
-	src_port = "12345"
+	sport = "12345"
 	dst = "1.1.1.1"
-	dst_port = "12345"
+	dport = "12345"
 strings:
 	$a = "a"
 condition:

@@ -71,8 +71,8 @@ func InitConfig() (*Config, error) {
 	}
 
 	// Mole overwritten variables
-	config.Vars["$tcp"] = "TCP"
-	config.Vars["$udp"] = "UDP"
+	config.Vars["$tcp"] = "tcp"
+	config.Vars["$udp"] = "udp"
 	config.Vars["$any_addr"] = "0.0.0.0/0"
 	config.Vars["$any_port"] = "0:65535"
 

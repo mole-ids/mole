@@ -50,6 +50,8 @@ func init() {
 	idsCmd.Flags().Bool("pfring", true, "Enable PF Ring on the interface")
 	idsCmd.Flags().String("bpf", "", "BPF filter")
 	idsCmd.Flags().StringSlice("variables", []string{}, "Varaiables value used in the rules")
+	idsCmd.Flags().String("moleLogTo", "", "Mole IDS log destination")
+	idsCmd.Flags().String("moleLogFormat", "eve", "Mole IDS log format")
 
 	// Bind flags to configuration file
 	viper.BindPFlag("interface.iface", idsCmd.Flags().Lookup("iface"))
@@ -59,6 +61,9 @@ func init() {
 	viper.BindPFlag("rules.rules_dir", idsCmd.Flags().Lookup("rulesDir"))
 	viper.BindPFlag("rules.rules_index", idsCmd.Flags().Lookup("rulesIndex"))
 	viper.BindPFlag("rules.variables", idsCmd.Flags().Lookup("variables"))
+
+	viper.BindPFlag("logger.mole.to", idsCmd.Flags().Lookup("moleLogTo"))
+	viper.BindPFlag("logger.mole.format", idsCmd.Flags().Lookup("moleLogFormat"))
 
 	// Bind persistent flags from root command
 	viper.BindPFlag("logger.log_to", RootCmd.PersistentFlags().Lookup("logTo"))
@@ -70,6 +75,7 @@ func init() {
 
 // runIdsCmd executes ids command
 func runIdsCmd(cmd *cobra.Command, args []string) {
+	logger.Log.Info(logger.StartingMoleMsg)
 	// Ensure user is root
 	ensureRoot()
 

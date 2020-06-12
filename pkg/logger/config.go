@@ -13,7 +13,9 @@
 // limitations under the License.
 package logger
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+)
 
 // Config logger internal configuration
 type Config struct {
@@ -21,10 +23,18 @@ type Config struct {
 	LogTo string
 	// LogLevel logger level. This can take info, error, warning, and debug
 	LogLevel string
+
+	MoleLogger MoleLogger
+}
+
+type MoleLogger struct {
+	To     string
+	Format string
 }
 
 // InitConfig initializes logger package
 func InitConfig() (*Config, error) {
+	var err error
 	config := &Config{
 		LogTo:    viper.GetString("logger.log_to"),
 		LogLevel: viper.GetString("logger.log_level"),
@@ -38,5 +48,20 @@ func InitConfig() (*Config, error) {
 		config.LogLevel = "info"
 	}
 
-	return config, nil
+	mole := MoleLogger{
+		To:     viper.GetString("logger.mole.to"),
+		Format: viper.GetString("logger.mole.format"),
+	}
+
+	if mole.To == "" {
+		mole.To = "/dev/stdout"
+	}
+
+	if mole.Format != "" {
+		mole.Format = "eve"
+	}
+
+	config.MoleLogger = mole
+
+	return config, err
 }

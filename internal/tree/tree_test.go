@@ -27,11 +27,11 @@ func getDummyData() []types.MetaRule {
 
 	values := 3
 
-	data["proto"] = []string{"TCP", "TCP", "UDP"}
+	data["proto"] = []string{"tcp", "tcp", "udp"}
 	data["src"] = []string{"192.168.0.1", "192.168.2.1", "192.168.3.1"}
-	data["src_port"] = []string{"123", "123", "123"}
+	data["sport"] = []string{"123", "123", "123"}
 	data["dst"] = []string{"172.16.0.1", "172.16.2.1", "172.16.3.1"}
-	data["dst_port"] = []string{"123", "123", "123"}
+	data["dport"] = []string{"123", "123", "123"}
 
 	for idx := 0; idx < values; idx++ {
 		meta := make(types.MetaRule)
@@ -52,11 +52,11 @@ func getDummyData2() []types.MetaRule {
 
 	values := 3
 
-	data["proto"] = []string{"TCP", "TCP", "UDP"}
+	data["proto"] = []string{"tcp", "tcp", "udp"}
 	data["src"] = []string{"192.168.0.1", "192.168.2.1", "192.168.3.1"}
-	data["src_port"] = []string{"123", "123", "123"}
+	data["sport"] = []string{"123", "123", "123"}
 	data["dst"] = []string{"172.16.0.1", "172.16.2.1", "172.16.3.1"}
-	data["dst_port"] = []string{"123", "123", "123"}
+	data["dport"] = []string{"123", "123", "123"}
 
 	for idx := 0; idx < values; idx++ {
 		meta := make(types.MetaRule)
