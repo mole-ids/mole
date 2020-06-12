@@ -14,18 +14,15 @@
 package logger
 
 import (
-	"os"
-
 	"github.com/mole-ids/mole/internal/merr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // Log is the global logger for Mole
 var Log *zap.SugaredLogger
 
-// Result is the logger for matches
-var Result *zap.SugaredLogger
+// Mole is the logger for matches
+var Mole *zap.SugaredLogger
 
 // New returns a new logger based on the configuration provided
 func New() (err error) {
@@ -37,12 +34,13 @@ func New() (err error) {
 		return merr.ErrLoggerInitConfig
 	}
 
-	var hostname string
-	hostname, err = os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
+	initAppLogger(config)
+	initMoleLogger(config)
 
+	return nil
+}
+
+func initAppLogger(config *Config) error {
 	logConfig := zap.NewProductionConfig()
 
 	// TODO: Add this options at the configuration level
@@ -69,12 +67,7 @@ func New() (err error) {
 		logConfig.Level.SetLevel(zap.InfoLevel)
 	}
 
-	op := zap.Field{
-		Key:    "hostname",
-		Type:   zapcore.StringType,
-		String: hostname,
-	}
-	l, err := logConfig.Build(zap.Fields(op))
+	l, err := logConfig.Build()
 	if err != nil {
 		return merr.ErrLoggerBuildZapFields
 	}
@@ -82,17 +75,26 @@ func New() (err error) {
 	Log = l.Sugar()
 	defer Log.Sync()
 
-	// TODO: This needs to be done properly. Maybe using its own configuration
-	// variables
-	lr, err := logConfig.Build(zap.Fields(op))
+	return nil
+}
+
+func initMoleLogger(config *Config) error {
+	logConfig := zap.NewProductionConfig()
+
+	// TODO: Add this options at the configuration level
+	logConfig.DisableCaller = true
+	logConfig.DisableStacktrace = true
+	logConfig.Development = false
+
+	logConfig.OutputPaths = []string{config.MoleLogger.To}
+
+	lr, err := logConfig.Build()
 	if err != nil {
 		return merr.ErrLoggerBuildZapFields
 	}
 
-	Result = lr.Sugar()
-	defer Result.Sync()
-
-	Log.Infof(LoggerInitSuccessMsg, logConfig.Level.Level().CapitalString())
+	Mole = lr.Sugar()
+	defer Mole.Sync()
 
 	return nil
 }

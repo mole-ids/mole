@@ -19,7 +19,7 @@ const (
 	LoggerInitConfigMsg             = "getting logger config"
 	LoggerBuildZapFieldsMsg         = "while compiling logger options"
 	YaraScanMemMsg                  = "error while scanning payload"
-	YaraRuleNotFoundMsg             = "unable to find yara rule for %v"
+	YaraRuleNotFoundMsg             = "unable to find yara rule for proto:%s src:%s sport:%s dst:%s dport:%s"
 	PFRingConfigErr                 = "error while initiating pf_ring: %s"
 	PFRingCreateObjectMsg           = "unable to crate new pf_ring onject"
 	WhileDecodingPaketMsg           = "while decoding packet"
@@ -35,7 +35,7 @@ const (
 	RuleOrIndexNotDefinedMsg        = "either a rule index or rule folder have to be defined"
 	InitRulesManagerMsg             = "unable to initiate rules manager config"
 	LoadingRulesMsg                 = "while loading rules"
-	YaraRuleMetadataMsg             = "unable to get metadata from yrule %s"
+	YaraRuleMetadataMsg             = "while getting metadata info from %s"
 	InsertYaraMsg                   = "unable to insert rule %s"
 	YaraCompilerMsg                 = "unable to create yara compiler"
 	NoPreviousYaraRulesMsg          = "unable to rules from previous rules"
@@ -58,6 +58,10 @@ const (
 	RuleFolderIsNotAbsMsg           = "rules folder is not an absolute path"
 	IndexFileIsNotAbsMsg            = "rules index file is not an absolute path"
 	ErrIndexOrRuleFolderRequiredMsg = "either rules folder or index file is required"
+	WrongOutputFormatMsg            = "mole output format not recognized"
+	BadRuleMetadataMsg              = "because entry %s has no value"
+	CompileYaraRuleErrorMsg         = "Mole couldn't compile a yara rule because"
+	KeywordsNotMeetMsg              = "keywork %s not found while processing the rule"
 )
 
 var (
@@ -77,4 +81,5 @@ var (
 	ErrPortBoundsNotValid    = errors.New(PortBaundsNotValidMsg)
 	ErrRuleFolderIsNotAbs    = errors.New(RuleFolderIsNotAbsMsg)
 	ErrIndexFileIsNotAbs     = errors.New(IndexFileIsNotAbsMsg)
+	ErrWrongOutputFormat     = errors.New(WrongOutputFormatMsg)
 )

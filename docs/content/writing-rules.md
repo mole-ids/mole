@@ -36,7 +36,7 @@ Protocol. Possible values:
 
 Origin address of the packet. It must be an ip address, netmask, list of ip address or range of ip addresses. 
 
-### src_port
+### sport
 
 Origin port of the packet. It can be a port, a list of ports or a range of ports.
 
@@ -45,7 +45,7 @@ Origin port of the packet. It can be a port, a list of ports or a range of ports
 Destination address of the packet. It must be an ip address, netmask, list of ip address or range of ip addresses. 
 
 
-### dst_port
+### dport
 
 Destination port of the packet. It can be a port, a list of ports or a range of ports.
 

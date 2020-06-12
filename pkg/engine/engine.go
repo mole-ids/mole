@@ -45,12 +45,9 @@ type Engine struct {
 }
 
 var (
-	// netProtos network protocols allowed in mole
-	netProtos = []gopacket.LayerType{layers.LayerTypeIPv4}
-
-	// transProtos transport protocols allowed in mole
-	transProtos = []gopacket.LayerType{layers.LayerTypeTCP,
-		layers.LayerTypeUDP}
+	// moleProtos network protocols allowed in mole
+	moleProtos = []gopacket.LayerType{layers.LayerTypeIPv4, layers.LayerTypeTCP,
+		layers.LayerTypeUDP, layers.LayerTypeSCTP}
 )
 
 // New builds a new Engine
@@ -94,19 +91,103 @@ func New() (motor *Engine, err error) {
 	return motor, err
 }
 
-// FireRules finds the set of rules that will be used to analyze the network packet
-func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
+// Start read packages and fire Yara rules against those packets
+func (motor *Engine) Start() {
+	logger.Log.Info("engine is listening for packages")
+
+	// Start sniffing packages
+	// TODO: Take into account when pf_ring is not enable or another method is
+	// in used
+	packetSource := gopacket.NewPacketSource(motor.ring, layers.LinkTypeEthernet)
+	for pkt := range packetSource.Packets() {
+		// Checking for network errors
+		if err := pkt.ErrorLayer(); err != nil {
+			logger.Log.Errorf(logger.ErrorProcessingLayerMsg, pkt.ErrorLayer().LayerType)
+			continue
+		}
+
+		go motor.disectProtos(pkt)
+	}
+}
+
+func (motor *Engine) disectProtos(pkt gopacket.Packet) {
+	var meta types.MetaRule
+	var err error
+
+	networkLayer := pkt.NetworkLayer()
+	ipv4, ok := networkLayer.(*layers.IPv4)
+	if ok {
+		meta = make(types.MetaRule)
+		meta["proto"], _ = types.NewMRProto("ip")
+		meta["src"], err = types.NewSRCMRAddress(ipv4.SrcIP.String())
+		if err != nil {
+			logger.Log.Errorf("while building a IPv4 SRC Node for: %s:any --> %s:any", ipv4.SrcIP.String(), ipv4.DstIP.String())
+		}
+		meta["sport"], _ = types.NewSRCMRPort("0")
+		meta["dst"], err = types.NewDSTMRAddress(ipv4.DstIP.String())
+		if err != nil {
+			logger.Log.Errorf("while building a IPv4 DST Node for: %s:any --> %s:any", ipv4.SrcIP.String(), ipv4.DstIP.String())
+		}
+		meta["dport"], _ = types.NewDSTMRPort("0")
+
+		go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
+		switch ipv4.NextLayerType() {
+		case layers.LayerTypeTCP:
+			transportLayer := pkt.Layer(layers.LayerTypeTCP)
+			tcp := transportLayer.(*layers.TCP)
+
+			meta["proto"], _ = types.NewMRProto("tcp")
+			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", tcp.SrcPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), tcp.SrcPort, ipv4.DstIP.String())
+			}
+			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", tcp.DstPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), tcp.SrcPort, ipv4.DstIP.String(), tcp.DstPort)
+			}
+			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
+		case layers.LayerTypeUDP:
+			transportLayer := pkt.Layer(layers.LayerTypeUDP)
+			udp := transportLayer.(*layers.UDP)
+
+			meta["proto"], _ = types.NewMRProto("udp")
+			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", udp.SrcPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), udp.SrcPort, ipv4.DstIP.String())
+			}
+			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", udp.DstPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), udp.SrcPort, ipv4.DstIP.String(), udp.DstPort)
+			}
+			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
+		case layers.LayerTypeSCTP:
+			transportLayer := pkt.Layer(layers.LayerTypeSCTP)
+			sctp := transportLayer.(*layers.SCTP)
+			meta["proto"], _ = types.NewMRProto("sctp")
+			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", sctp.SrcPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), sctp.SrcPort, ipv4.DstIP.String())
+			}
+			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", sctp.DstPort))
+			if err != nil {
+				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), sctp.SrcPort, ipv4.DstIP.String(), sctp.DstPort)
+			}
+			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
+		}
+	}
+}
+
+func (motor *Engine) analyzeAndAlert(meta types.MetaRule, pkt gopacket.Packet, payload []byte) {
 	// Look for a matching rule set based on paket metadata
 	id, err := tree.LookupID(meta)
 	if err != nil {
-		logger.Log.Infof(merr.YaraRuleNotFoundMsg, meta)
+		logger.Log.Debugf(merr.YaraRuleNotFoundMsg, meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
 		return
 	}
 
 	// If there is a match, then execute the Yara rules associated
 	if scanner, found := motor.RuleMap[id]; found {
-
-		matches, err := scanner.ScanMem(data.Payload())
+		matches, err := scanner.ScanMem(pkt.Data())
 		if err != nil {
 			logger.Log.Errorf(logger.YaraScannerFaildMsg, err.Error())
 			return
@@ -135,7 +216,7 @@ func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
 				}
 			}
 
-			logger.Result.Infow("match",
+			logger.Mole.Infow("match",
 				"rule", match.Rule,
 				"namespace", match.Namespace,
 				"tags", strings.Join(match.Tags, ","),
@@ -144,155 +225,4 @@ func (motor *Engine) FireRules(meta types.MetaRule, data gopacket.Payload) {
 			)
 		}
 	}
-}
-
-// Start read packages and fire Yara rules against those packets
-func (motor *Engine) Start() {
-	logger.Log.Info("engine is listening for packages")
-
-	var err error
-	var payload gopacket.Payload
-	var meta types.MetaRule
-	meta = make(types.MetaRule)
-
-	// Start sniffing packages
-	// TODO: Take into account when pf_ring is not enable or another method is
-	// in used
-	packetSource := gopacket.NewPacketSource(motor.ring, layers.LinkTypeEthernet)
-	for pkt := range packetSource.Packets() {
-		// Checking for network errors
-		if err := pkt.ErrorLayer(); err != nil {
-			logger.Log.Errorf(logger.ErrorProcessingLayerMsg, pkt.ErrorLayer().LayerType)
-			continue
-		}
-
-		// Extract data from network layer.
-		// First check whether the packet belongs to the layer
-		// Second validate if the layer type or protocol is one of
-		// the mole allowed protocols
-		netLink := pkt.NetworkLayer()
-		if netLink != nil && inProtos(netLink.LayerType(), netProtos) {
-			payload, err = extractMetaFrom("network", pkt, meta)
-			if err != nil {
-				logger.Log.Error(err.Error())
-			}
-		}
-
-		// Extract data from transport layer
-		// First check whether the packet belongs to the layer
-		// Second validate if the layer type or protocol is one of
-		// the mole allowed protocols
-		transportLink := pkt.TransportLayer()
-		if transportLink != nil && inProtos(transportLink.LayerType(), transProtos) {
-			payload, err = extractMetaFrom("transport", pkt, meta)
-			if err != nil {
-				logger.Log.Error(err.Error())
-			}
-		}
-
-		// if there is an error, just continue
-		if err != nil {
-			continue
-		}
-
-		// Once metadata was extracted a decision neets to be taken
-		logger.Log.Infof(logger.MetadataExtractedMsg, meta)
-		motor.FireRules(meta, payload)
-	}
-}
-
-// transProtos extract metadata from the packet
-func extractMetaFrom(typ string, pkt gopacket.Packet, meta types.MetaRule) (payload gopacket.Payload, err error) {
-	switch typ {
-	// case "network":
-	// 	netLink := pkt.NetworkLayer()
-	// 	meta["proto"], err = types.NewMRProto(netLink.LayerType().String())
-	// 	if err != nil {
-	// 		return payload, errors.Wrap(err, "extracting 'proto' from LayerType IP")
-	// 	}
-	// 	return payload, errors.New("WIP")
-	// var ip4 layers.IPv4
-	// parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &ip4)
-	// decoded := []gopacket.LayerType{}
-	// if err := parser.DecodeLayers(pkt.Data(), &decoded); err != nil {
-	// 	return errors.New("unable to decode packet")
-	// }
-
-	// for _, layerType := range decoded {
-	// 	switch layerType {
-	// 	case layers.LayerTypeIPv4:
-	// 		fmt.Println(" IP4 ", ip4.SrcIP, ip4.DstIP)
-	// 	}
-	// }
-
-	case "transport":
-		var err error
-
-		var eth layers.Ethernet
-		var ip4 layers.IPv4
-		var tcp layers.TCP
-		var udp layers.UDP
-		var payload gopacket.Payload
-
-		// Decode package
-		parser := gopacket.NewDecodingLayerParser(layers.LayerTypeEthernet, &eth, &ip4, &tcp, &udp, &payload)
-		decodedLayers := make([]gopacket.LayerType, 0, 10)
-		err = parser.DecodeLayers(pkt.Data(), &decodedLayers)
-
-		// Porcess each layer and get the metadata from each one
-		for _, typ := range decodedLayers {
-			switch typ {
-			case layers.LayerTypeEthernet:
-				continue
-			case layers.LayerTypeIPv4:
-				meta["src"], err = types.NewSRCMRAddress(ip4.SrcIP.String())
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'src' from LayerType IP")
-				}
-				meta["dst"], err = types.NewDSTMRAddress(ip4.DstIP.String())
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'dst' from LayerType IP")
-				}
-			case layers.LayerTypeTCP:
-				meta["proto"], err = types.NewMRProto(tcp.LayerType().String())
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'proto' from LayerType TCP")
-				}
-				meta["src_port"], err = types.NewSRCMRPort(fmt.Sprintf("%d", tcp.SrcPort))
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'src_port' from LayerType TCP")
-				}
-				meta["dst_port"], err = types.NewDSTMRPort(fmt.Sprintf("%d", tcp.DstPort))
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'dst_port' from LayerType TCP")
-				}
-			case layers.LayerTypeUDP:
-				meta["proto"], err = types.NewMRProto(udp.LayerType().String())
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'proto' from LayerType UDP")
-				}
-				meta["src_port"], err = types.NewSRCMRPort(fmt.Sprintf("%d", udp.SrcPort))
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'src_port' from LayerType UDP")
-				}
-				meta["dst_port"], err = types.NewDSTMRPort(fmt.Sprintf("%d", udp.DstPort))
-				if err != nil {
-					return payload, errors.Wrap(err, "extracting 'dst_port' from LayerType UDP")
-				}
-			case gopacket.LayerTypePayload:
-				continue
-			}
-		}
-		// TODO: handle fragmented packages
-		// if decodedLayers.Truncated {
-		// 	fmt.Println("  Packet has been truncated")
-		// }
-		if err != nil {
-			return payload, errors.Wrap(err, merr.WhileDecodingPaketMsg)
-		}
-
-		return payload, nil
-	}
-
-	return payload, errors.Errorf(merr.UnkownPaketTypeMsg, typ)
 }

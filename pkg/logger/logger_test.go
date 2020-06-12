@@ -19,14 +19,14 @@ func TestLogger(t *testing.T) {
 	err := New()
 
 	if err != nil {
-		t.Errorf("Exception no error, but found %s", err.Error())
+		t.Errorf("Exception no error, but found: %s", err.Error())
 	}
 
 	if Log == nil {
 		t.Error("Logger was not initialized successfully")
 	}
 
-	if Result == nil {
-		t.Error("Result logger was not initialized successfully")
+	if Mole == nil {
+		t.Error("Mole logger was not initialized successfully")
 	}
 }

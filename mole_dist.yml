@@ -17,3 +17,7 @@ rules:
 logger:
     log_to: /dev/stdout
     log_level: "info"
+
+    mole:
+      format: eve
+      to: filename

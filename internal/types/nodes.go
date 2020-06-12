@@ -173,14 +173,14 @@ type MRPort struct {
 	Original string
 }
 
-// NewSRCMRPort returns a new MRPort node with `src_port` as key
+// NewSRCMRPort returns a new MRPort node with `sport` as key
 func NewSRCMRPort(value interface{}) (MRPort, error) {
-	return newMRPort("src_port", value)
+	return newMRPort("sport", value)
 }
 
-// NewDSTMRPort returns a new MRPort node with `dst_port` as key
+// NewDSTMRPort returns a new MRPort node with `dport` as key
 func NewDSTMRPort(value interface{}) (MRPort, error) {
-	return newMRPort("dst_port", value)
+	return newMRPort("dport", value)
 }
 
 func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
@@ -419,7 +419,7 @@ func GetNodeValue(key string, value interface{}) (NodeValue, error) {
 			return nil, err
 		}
 		return node, err
-	case "src_port":
+	case "sport":
 		node, err := NewSRCMRPort(value)
 		if err != nil {
 			return nil, err
@@ -431,7 +431,7 @@ func GetNodeValue(key string, value interface{}) (NodeValue, error) {
 			return nil, err
 		}
 		return node, err
-	case "dst_port":
+	case "dport":
 		node, err := NewDSTMRPort(value)
 		if err != nil {
 			return nil, err

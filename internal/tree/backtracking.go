@@ -15,6 +15,7 @@ package tree
 
 import (
 	"github.com/mole-ids/mole/internal/types"
+	"github.com/mole-ids/mole/pkg/logger"
 )
 
 // Bactracking implements the backtracking search
@@ -32,6 +33,7 @@ type Bactracking struct {
 // NewBactracking returns a new Backtracking object. The argument is the target
 // to search for
 func NewBactracking(target types.MetaRule) *Bactracking {
+	logger.Log.Debugf(">>> Target: proto:%s src:%s sport:%s dst:%s dport:%s", target["proto"].GetValue(), target["src"].GetValue(), target["sport"].GetValue(), target["dst"].GetValue(), target["dport"].GetValue())
 	return &Bactracking{
 		target:   target,
 		solution: make(types.MetaRule),
@@ -68,6 +70,7 @@ func (bt *Bactracking) AddPartial(node types.NodeValue) {
 // Accepted check whether the NodeValue is a good candidate for the solution
 func (bt *Bactracking) Accepted(node types.NodeValue) bool {
 	// Validates whether `node` match with the one in the target map
+	logger.Log.Debugf("Checking: %s == %s => %t", node.GetValue(), bt.target[node.GetKey()].GetValue(), node.Match(bt.target[node.GetKey()]))
 	return node.Match(bt.target[node.GetKey()])
 }
 
