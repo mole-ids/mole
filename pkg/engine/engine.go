@@ -14,19 +14,19 @@
 package engine
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pfring"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/internal/tree"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/pkg/interfaces"
 	"github.com/mole-ids/mole/pkg/logger"
+	"github.com/mole-ids/mole/pkg/logger/models"
 	"github.com/mole-ids/mole/pkg/rules"
 )
 
@@ -35,19 +35,26 @@ type Engine struct {
 	// Config engine's configuration most of its values come from the arguments
 	// or configuration file
 	Config *Config
+
+	// Iface is the interface where Mole reads packets
+	Iface *interfaces.Interfaces
+
 	// RulesManager handles everything related with rules
 	RulesManager *rules.Manager
+
 	// RuleMap used to fire Yara rules based on the identifier token return by
 	// the look up query
 	RuleMap types.RuleMapScanner
-	// ring used for sniff packages from pf_ring
-	ring *pfring.Ring
+
+	// Ring used for sniff packages from pf_ring
+	Ring *pfring.Ring
 }
 
 var (
 	// moleProtos network protocols allowed in mole
-	moleProtos = []gopacket.LayerType{layers.LayerTypeIPv4, layers.LayerTypeTCP,
-		layers.LayerTypeUDP, layers.LayerTypeSCTP}
+	moleNetworkProtos     = []string{"ipv4"}
+	moleTransportProtos   = []string{"tcp", "udp", "sctp"}
+	moleApplicationProtos = []string{}
 )
 
 // New builds a new Engine
@@ -57,172 +64,138 @@ func New() (motor *Engine, err error) {
 	motor.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate engine config")
+		return nil, errors.Wrap(err, ConfigInitFailedMsg)
 	}
 
 	// Get the rules manager
 	motor.RulesManager, err = rules.NewManager()
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to initiate rules manager")
+		return nil, errors.Wrap(err, RulesManagerInitFailMsg)
 	}
 
 	// Build a Decision tree and the RuleMap
 	motor.RuleMap, err = tree.FromRules(motor.RulesManager.GetRawRules())
 	if err != nil {
-		return nil, errors.Wrap(err, "while generating the Decision tree")
+		return nil, errors.Wrap(err, CreateTreeFailMsg)
 	}
 
 	// Initialize interfaces
-	iface, err := interfaces.New()
+	motor.Iface, err = interfaces.New()
 	if err != nil {
-		logger.Log.Fatalf(logger.UnableInitInterfaceMsg, err.Error())
+		return nil, errors.Wrap(err, InterfacesInitFailMsg)
 	}
 
 	// Enable pf_ring if requested
-	if iface.PFRingEnabled() {
-		motor.ring, err = iface.InitPFRing()
+	if motor.Iface.PFRingEnabled() {
+		motor.Ring, err = motor.Iface.InitPFRing()
 		if err != nil {
-			logger.Log.Fatalf(merr.PFRingConfigErr, err.Error())
+			return nil, errors.Wrap(err, PFRingInitFailMsg)
 		}
 	}
 
-	logger.Log.Info(logger.MoleInitiatedMsg)
+	logger.Log.Info(MainEventInitCompletedMsg)
 
 	return motor, err
 }
 
 // Start read packages and fire Yara rules against those packets
 func (motor *Engine) Start() {
-	logger.Log.Info("engine is listening for packages")
+	logger.Log.Info(StartMsg)
 
 	// Start sniffing packages
 	// TODO: Take into account when pf_ring is not enable or another method is
 	// in used
-	packetSource := gopacket.NewPacketSource(motor.ring, layers.LinkTypeEthernet)
+	packetSource := gopacket.NewPacketSource(motor.Ring, layers.LinkTypeEthernet)
 	for pkt := range packetSource.Packets() {
 		// Checking for network errors
 		if err := pkt.ErrorLayer(); err != nil {
-			logger.Log.Errorf(logger.ErrorProcessingLayerMsg, pkt.ErrorLayer().LayerType)
+			logger.Log.Errorf(UnableToDecodePacketMsg, pkt.ErrorLayer().LayerType)
 			continue
 		}
 
-		go motor.disectProtos(pkt)
+		go motor.extractLayers(pkt)
 	}
 }
 
-func (motor *Engine) disectProtos(pkt gopacket.Packet) {
-	var meta types.MetaRule
+func (motor *Engine) extractLayers(pkt gopacket.Packet) {
 	var err error
 
-	networkLayer := pkt.NetworkLayer()
-	ipv4, ok := networkLayer.(*layers.IPv4)
-	if ok {
-		meta = make(types.MetaRule)
-		meta["proto"], _ = types.NewMRProto("ip")
-		meta["src"], err = types.NewSRCMRAddress(ipv4.SrcIP.String())
-		if err != nil {
-			logger.Log.Errorf("while building a IPv4 SRC Node for: %s:any --> %s:any", ipv4.SrcIP.String(), ipv4.DstIP.String())
-		}
-		meta["sport"], _ = types.NewSRCMRPort("0")
-		meta["dst"], err = types.NewDSTMRAddress(ipv4.DstIP.String())
-		if err != nil {
-			logger.Log.Errorf("while building a IPv4 DST Node for: %s:any --> %s:any", ipv4.SrcIP.String(), ipv4.DstIP.String())
-		}
-		meta["dport"], _ = types.NewDSTMRPort("0")
+	pe := NewPacketExtractor(pkt)
 
-		go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
-		switch ipv4.NextLayerType() {
-		case layers.LayerTypeTCP:
-			transportLayer := pkt.Layer(layers.LayerTypeTCP)
-			tcp := transportLayer.(*layers.TCP)
+	network := pkt.NetworkLayer()
+	if network != nil {
+		if err = pe.AddNetworkLayer(network.LayerType().String(), network); err == nil {
 
-			meta["proto"], _ = types.NewMRProto("tcp")
-			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", tcp.SrcPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), tcp.SrcPort, ipv4.DstIP.String())
-			}
-			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", tcp.DstPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), tcp.SrcPort, ipv4.DstIP.String(), tcp.DstPort)
-			}
-			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
-		case layers.LayerTypeUDP:
-			transportLayer := pkt.Layer(layers.LayerTypeUDP)
-			udp := transportLayer.(*layers.UDP)
+			trasnport := pkt.TransportLayer()
+			if trasnport != nil {
+				if err = pe.AddTransportLayer(trasnport.LayerType().String(), trasnport); err == nil {
 
-			meta["proto"], _ = types.NewMRProto("udp")
-			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", udp.SrcPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), udp.SrcPort, ipv4.DstIP.String())
+					application := pkt.ApplicationLayer()
+					if application != nil {
+						// TODO: handle application layer
+						pe.AddApplicationLayer(application.LayerType().String(), application)
+
+						motor.checkAndFire(pe)
+					}
+				}
 			}
-			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", udp.DstPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), udp.SrcPort, ipv4.DstIP.String(), udp.DstPort)
-			}
-			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
-		case layers.LayerTypeSCTP:
-			transportLayer := pkt.Layer(layers.LayerTypeSCTP)
-			sctp := transportLayer.(*layers.SCTP)
-			meta["proto"], _ = types.NewMRProto("sctp")
-			meta["sport"], err = types.NewSRCMRPort(fmt.Sprintf("%d", sctp.SrcPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", ipv4.SrcIP.String(), sctp.SrcPort, ipv4.DstIP.String())
-			}
-			meta["dport"], err = types.NewDSTMRPort(fmt.Sprintf("%d", sctp.DstPort))
-			if err != nil {
-				logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", ipv4.SrcIP.String(), sctp.SrcPort, ipv4.DstIP.String(), sctp.DstPort)
-			}
-			go motor.analyzeAndAlert(meta, pkt, networkLayer.LayerContents())
 		}
 	}
 }
 
-func (motor *Engine) analyzeAndAlert(meta types.MetaRule, pkt gopacket.Packet, payload []byte) {
-	// Look for a matching rule set based on paket metadata
+func (motor *Engine) checkAndFire(pe *PacketExtractor) {
+	meta := pe.GetMetadata()
+
 	id, err := tree.LookupID(meta)
 	if err != nil {
-		logger.Log.Debugf(merr.YaraRuleNotFoundMsg, meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
+		logger.Log.Debugf(NoMatchFoundMsg,
+			meta["proto"].GetValue(),
+			meta["src"].GetValue(),
+			meta["sport"].GetValue(),
+			meta["dst"].GetValue(),
+			meta["dport"].GetValue())
 		return
 	}
 
-	// If there is a match, then execute the Yara rules associated
 	if scanner, found := motor.RuleMap[id]; found {
-		matches, err := scanner.ScanMem(pkt.Data())
+		matches, err := scanner.ScanMem(pe.GetPacketPayload())
 		if err != nil {
-			logger.Log.Errorf(logger.YaraScannerFaildMsg, err.Error())
+			logger.Log.Errorf(ScannerScanMemFaildMsg, err.Error())
 			return
 		}
 
-		// matches are the results from the scan
+		metadata := pe.GetPacketMetadata()
 		for _, match := range matches {
-			// This is where mole is logging the resutls
-			// TODO: This is a PoC at the moment, this needs a complete
-			// rewrite
-			var meta, strs string
-			for k, vi := range match.Meta {
-				v := vi.(string)
-				if meta == "" {
-					meta = fmt.Sprintf("%s:%s", k, v)
-				} else {
-					meta = fmt.Sprintf("%s|%s:%s", meta, k, v)
-				}
+			var event models.EveEvent
+
+			event.Timestamp = &models.MoleTime{
+				Time: metadata.Timestamp,
+			}
+			event.EventType = match.Meta["type"].(string)
+			event.Proto = meta["proto"].GetValue()
+			event.SrcIP = meta["src"].GetValue()
+			event.DstIP = meta["dst"].GetValue()
+			event.SrcPort, _ = strconv.Atoi(meta["sport"].GetValue())
+			event.DstPort, _ = strconv.Atoi(meta["dport"].GetValue())
+
+			event.Alert = models.AlertEvent{
+				Name: match.Rule,
+				Tags: match.Tags,
+				Meta: match.Meta,
 			}
 
-			for idx, sm := range match.Strings {
-				if idx == 0 {
-					strs = fmt.Sprintf("%s:%d:%x", sm.Name, sm.Offset, sm.Data)
-				} else {
-					strs = fmt.Sprintf("%s|%s:%d:%x", strs, sm.Name, sm.Offset, sm.Data)
-				}
+			var matchArr models.MatchArray
+			for _, m := range match.Strings {
+				matchArr = append(matchArr, models.MatchString{
+					Name:   m.Name,
+					Offset: m.Offset,
+					Data:   m.Data,
+				})
 			}
 
-			logger.Mole.Infow("match",
-				"rule", match.Rule,
-				"namespace", match.Namespace,
-				"tags", strings.Join(match.Tags, ","),
-				"meta", meta,
-				"strings", strs,
-			)
+			event.Matches = matchArr
+
+			logger.Mole.Infow(MainEventOuterMsg, zap.Object(MainEventInnerMsg, &event))
 		}
 	}
 }

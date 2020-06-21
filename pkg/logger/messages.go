@@ -14,22 +14,21 @@
 package logger
 
 const (
-	LoggerInitSuccessMsg      = "logger successfully initiated in %s level"
-	LoggerMoleInitSuccessMsg  = "mole logger successfully initiated"
-	StartingMoleMsg           = "starting mole ids"
-	ExtractMetaFromLayerMsg   = "protocol not allowed"
-	ExtractTransporDataMsg    = "protocol not allowed in transport"
-	MetadataExtractedMsg      = "extracted from network packet: %v"
-	UnableInitInterfaceMsg    = "unable to initiate interfaces: %s"
-	MoleInitiatedMsg          = "starting mole ids engine"
-	EngineListeningMsg        = "mole ids engine is ready and listening for packages"
-	ErrorProcessingLayerMsg   = "while reading package at layer %d"
-	InterfacesInitiatedMsg    = "starting interfaces"
-	PfRingInitiatedMsg        = "starting pf_ring "
-	YaraRulesInitiatedMsg     = "yara rules loaded successfully"
-	YaraRulesLoadedMsg        = "loaded %d rules without errors in %fs"
-	RuleMapBuiltMsg           = "building rules map"
-	YaraScannerFaildMsg       = "error while scanning payload: %s"
+	LoggerInitSuccessMsg     = "logger successfully initiated in %s level"
+	LoggerMoleInitSuccessMsg = "mole logger successfully initiated"
+	StartingMoleMsg          = "starting mole ids"
+	ExtractMetaFromLayerMsg  = "protocol not allowed"
+	ExtractTransporDataMsg   = "protocol not allowed in transport"
+	MetadataExtractedMsg     = "extracted from network packet: %v"
+
+	EngineListeningMsg = "mole ids engine is ready and listening for packages"
+
+	InterfacesInitiatedMsg = "starting interfaces"
+	PfRingInitiatedMsg     = "starting pf_ring "
+	YaraRulesInitiatedMsg  = "yara rules loaded successfully"
+	YaraRulesLoadedMsg     = "loaded %d rules without errors in %fs"
+	RuleMapBuiltMsg        = "building rules map"
+
 	IndexAndDirAreAbsoluteMsg = "assuming index file and rules directory to be absolute references"
 	DirRelativeMsg            = "assumimng yara rules directory to be relative to %s"
 	IndexRelativeMsg          = "assuming yara index file to be relative to %s"

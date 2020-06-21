@@ -16,11 +16,10 @@ package merr
 import "errors"
 
 const (
-	LoggerInitConfigMsg             = "getting logger config"
-	LoggerBuildZapFieldsMsg         = "while compiling logger options"
-	YaraScanMemMsg                  = "error while scanning payload"
-	YaraRuleNotFoundMsg             = "unable to find yara rule for proto:%s src:%s sport:%s dst:%s dport:%s"
-	PFRingConfigErr                 = "error while initiating pf_ring: %s"
+	LoggerInitConfigMsg     = "getting logger config"
+	LoggerBuildZapFieldsMsg = "while compiling logger options"
+	YaraScanMemMsg          = "error while scanning payload"
+
 	PFRingCreateObjectMsg           = "unable to crate new pf_ring onject"
 	WhileDecodingPaketMsg           = "while decoding packet"
 	UnkownPaketTypeMsg              = "type %s not recognized"
