@@ -16,7 +16,6 @@ package interfaces
 import (
 	"net"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -34,10 +33,10 @@ func New() (iface *Interfaces, err error) {
 	iface.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, merr.InterfaceInitFailedMsg)
+		return nil, errors.Wrap(err, InterfaceConfigInitFailedMsg)
 	}
 
-	logger.Log.Info(logger.InterfacesInitiatedMsg)
+	logger.Log.Info(InterfacesInitMsg)
 	return iface, nil
 }
 
@@ -51,7 +50,7 @@ func validateIface(interfaceName string) (ok bool, err error) {
 	ok = false
 	inets, err := net.Interfaces()
 	if err != nil {
-		return ok, errors.Wrap(err, merr.InterfacesListFailesMsg)
+		return ok, errors.Wrap(err, InterfacesListFailedMsg)
 	}
 
 	for _, inet := range inets {

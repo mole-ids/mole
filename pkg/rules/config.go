@@ -16,7 +16,6 @@ package rules
 import (
 	"path/filepath"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -55,24 +54,25 @@ func InitConfig() (*Config, error) {
 	} else {
 		// Otherwise, we need values to be absolute path
 		if config.RulesFolder != "" && !filepath.IsAbs(config.RulesFolder) {
-			err = merr.ErrRuleFolderIsNotAbs
+			err = ErrRuleFolderPathIsNotAbs
 		}
 		if config.RulesIndex != "" && !filepath.IsAbs(config.RulesIndex) {
 			if err != nil {
-				err = errors.Wrap(err, merr.IndexFileIsNotAbsMsg)
+				err = errors.Wrap(err, IndexFilePathIsNotAbsEitherMsg)
 			} else {
-				err = merr.ErrIndexFileIsNotAbs
+				err = ErrIndexFilePathIsNotAbs
 			}
 		}
 	}
 
 	if config.RulesFolder == "" && config.RulesIndex == "" {
-		err = errors.Wrap(err, merr.ErrIndexOrRuleFolderRequiredMsg)
+		err = ErrIndexOrRuleFolderPathRequired
 	}
 
 	// Mole overwritten variables
 	config.Vars["$tcp"] = "tcp"
 	config.Vars["$udp"] = "udp"
+	config.Vars["$sctp"] = "sctp"
 	config.Vars["$any_addr"] = "0.0.0.0/0"
 	config.Vars["$any_port"] = "0:65535"
 

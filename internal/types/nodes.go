@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/internal/utils"
 	"github.com/oklog/ulid"
 	"github.com/pkg/errors"
@@ -67,7 +66,7 @@ func NewMRProto(value interface{}) (MRProto, error) {
 	var err error
 	sValue, ok := value.(string)
 	if !ok {
-		err = merr.ErrConversionType
+		err = ErrConversionType
 	}
 	return MRProto{
 		Key:   "proto",
@@ -109,18 +108,18 @@ func NewDSTMRAddress(value interface{}) (MRAddress, error) {
 func newMRAddress(key string, value interface{}) (ipnet MRAddress, err error) {
 	sValue, ok := value.(string)
 	if !ok {
-		return ipnet, merr.ErrConversionType
+		return ipnet, ErrConversionType
 	}
 	var netv4 *net.IPNet
 	if strings.Contains(sValue, "/") {
 		_, netv4, err = net.ParseCIDR(sValue)
 		if err != nil {
-			return ipnet, errors.Wrap(err, merr.WhileParsingCIDRMsg)
+			return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
 		}
 	} else {
 		_, netv4, err = net.ParseCIDR(sValue + "/32")
 		if err != nil {
-			return ipnet, errors.Wrap(err, merr.WhileParsingCIDRMsg)
+			return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
 		}
 	}
 
@@ -186,7 +185,7 @@ func NewDSTMRPort(value interface{}) (MRPort, error) {
 func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 	sValue, ok := value.(string)
 	if !ok {
-		return mrport, merr.ErrConversionType
+		return mrport, ErrConversionType
 	}
 
 	var rng, lst bool
@@ -195,11 +194,11 @@ func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 	var iValue int
 	if strings.Contains(sValue, RangeSplitter) {
 		if strings.Contains(sValue, SequenceSplitter) {
-			return mrport, merr.ErrMixedFormats
+			return mrport, ErrMixedFormats
 		}
 
 		if strings.Count(sValue, RangeSplitter) > 1 {
-			return mrport, merr.ErrRangeExceeded
+			return mrport, ErrRangeExceeded
 		}
 
 		portsString := strings.Split(sValue, RangeSplitter)
@@ -214,28 +213,28 @@ func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 
 		ports[0], err = strconv.Atoi(portsString[0])
 		if err != nil {
-			return mrport, errors.Errorf(merr.InvalidPortNumberMsg, portsString[0])
+			return mrport, errors.Errorf(InvalidPortNumberMsg, portsString[0])
 		}
 		ports[1], err = strconv.Atoi(portsString[1])
 		if err != nil {
-			return mrport, errors.Errorf(merr.InvalidPortNumberMsg, portsString[1])
+			return mrport, errors.Errorf(InvalidPortNumberMsg, portsString[1])
 		}
 
 		if ports[0] >= ports[1] {
-			return mrport, merr.ErrPortBoundsNotValid
+			return mrport, ErrPortBoundsNotValid
 		}
 
 		rng = true
 	} else if strings.Contains(sValue, SequenceSplitter) {
 		if strings.Contains(sValue, RangeSplitter) {
-			return mrport, merr.ErrMixedFormats
+			return mrport, ErrMixedFormats
 		}
 
 		for _, vs := range strings.Split(sValue, SequenceSplitter) {
 			if vs != "" {
 				v, err := strconv.Atoi(vs)
 				if err != nil {
-					return mrport, errors.Errorf(merr.InvalidPortNumberMsg, vs)
+					return mrport, errors.Errorf(InvalidPortNumberMsg, vs)
 				}
 				portList = append(portList, v)
 			}
@@ -245,7 +244,7 @@ func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 	} else {
 		iValue, err = strconv.Atoi(sValue)
 		if err != nil {
-			return mrport, errors.Errorf(merr.InvalidPortNumberMsg, sValue)
+			return mrport, errors.Errorf(InvalidPortNumberMsg, sValue)
 		}
 	}
 
@@ -441,5 +440,5 @@ func GetNodeValue(key string, value interface{}) (NodeValue, error) {
 		node, err := NewMRid()
 		return node, err
 	}
-	return nil, merr.ErrUndefined
+	return nil, ErrUndefinedNode
 }

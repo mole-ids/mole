@@ -13,26 +13,15 @@
 // limitations under the License.
 package logger
 
+import "errors"
+
 const (
-	LoggerInitSuccessMsg     = "logger successfully initiated in %s level"
-	LoggerMoleInitSuccessMsg = "mole logger successfully initiated"
-	StartingMoleMsg          = "starting mole ids"
-	ExtractMetaFromLayerMsg  = "protocol not allowed"
-	ExtractTransporDataMsg   = "protocol not allowed in transport"
-	MetadataExtractedMsg     = "extracted from network packet: %v"
+	LoggerConfigInitFailedMsg  = "while initializing configuration got"
+	AppLoggerInitFailedMsg     = "application logger could not be initialized, because"
+	MoleLoggerInitFailedMsg    = "mole logger could not be initialized, because"
+	BuildingZapFieldsFailedMsg = "while compiling logger options"
+)
 
-	EngineListeningMsg = "mole ids engine is ready and listening for packages"
-
-	InterfacesInitiatedMsg = "starting interfaces"
-	PfRingInitiatedMsg     = "starting pf_ring "
-	YaraRulesInitiatedMsg  = "yara rules loaded successfully"
-	YaraRulesLoadedMsg     = "loaded %d rules without errors in %fs"
-	RuleMapBuiltMsg        = "building rules map"
-
-	IndexAndDirAreAbsoluteMsg = "assuming index file and rules directory to be absolute references"
-	DirRelativeMsg            = "assumimng yara rules directory to be relative to %s"
-	IndexRelativeMsg          = "assuming yara index file to be relative to %s"
-	UsingIndexRuleFileMsg     = "using %s as index file"
-	RulesIndexFileMsg         = "loading rules using index %s file"
-	RulesFolderMsg            = "loading rules from directory %s"
+var (
+	ErrBuildingZapFieldsFailed = errors.New(BuildingZapFieldsFailedMsg)
 )

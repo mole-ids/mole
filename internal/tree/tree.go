@@ -17,7 +17,6 @@ import (
 	"github.com/hillu/go-yara"
 	"github.com/pkg/errors"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/mole-ids/mole/pkg/rules"
@@ -46,7 +45,7 @@ var (
 // FromRules builds the Decision tree from scratch and returns types.RuleMapScanner
 // which is a map that define what Yara rule set execute for each id
 func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
-	logger.Log.Info(logger.RuleMapBuiltMsg)
+	logger.Log.Debug(RuleMapBuiltMsg)
 	// initialize the result map
 	ruleMap = make(types.RuleMapScanner)
 	// used as a middleware for extracting ara rule Metadata. These rules are
@@ -61,7 +60,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		// compile each rule
 		cr, err := yara.Compile(rule, map[string]interface{}{})
 		if err != nil {
-			return nil, errors.Wrap(err, merr.CompileYaraRuleErrorMsg)
+			return nil, errors.Wrap(err, CompileYaraRuleFailedMsg)
 		}
 
 		// crules should only contain one rule
@@ -71,14 +70,15 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		// Extracting rule metadata
 		meta, err := rules.GetRuleMetaInfo(yrule)
 		if err != nil {
-			return nil, errors.Wrapf(err, merr.YaraRuleMetadataMsg, yrule.Identifier())
+			return nil, errors.Wrapf(err, YaraRuleMetadataMsg, yrule.Identifier())
 		}
 
-		logger.Log.Debugf("adding rule: proto:%s | src:%s | sport:%s | dst:%s | dport:%s", meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
+		logger.Log.Debugf(AddingRuleMsg, meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
+
 		// Insert the node according to its metadata
 		idNode, _, err := insertRule(Decision, 0, types.Keywords, meta)
 		if err != nil {
-			return nil, errors.Wrapf(err, merr.InsertYaraMsg, yrule.Identifier())
+			return nil, errors.Wrapf(err, InsertRuleFailedMsg, yrule.Identifier())
 		}
 
 		// If there is not error, then get the identifier
@@ -92,7 +92,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		} else {
 			c, err := yara.NewCompiler()
 			if err != nil {
-				return nil, merr.ErrYaraCompiler
+				return nil, errors.Wrap(err, NewYaraCompilerMsg)
 			}
 			c.AddString(rule, types.YaraNamespace)
 			middleMap[id] = c
@@ -104,12 +104,12 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 	for k, v := range middleMap {
 		r, err := v.GetRules()
 		if err != nil {
-			return nil, merr.ErrNoPreviousYaraRules
+			return nil, ErrCompiledRulesNotFound
 		}
 
 		ruleMap[k], err = yara.NewScanner(r)
 		if err != nil {
-			return nil, merr.ErrYaraNewScanner
+			return nil, errors.Wrap(err, NewYaraCompilerMsg)
 		}
 	}
 	return ruleMap, nil
@@ -131,13 +131,16 @@ func New(value types.NodeValue) *Tree {
 // GetNodeByType returns a node based on the type of node
 func GetNodeByType(key string, value interface{}) (*Tree, error) {
 	nv, err := types.GetNodeValue(key, value)
-	return New(nv), errors.Wrap(err, merr.WhileGettingNodeByTypeMsg)
+	if err != nil {
+		return New(nv), errors.Wrap(err, WhileGettingNodeByTypeMsg)
+	}
+	return New(nv), nil
 }
 
 // InsertRule inserts Yara rule and generates an ID
 func InsertRule(lvl int, keys []string, rule types.MetaRule) (nodeID *Tree, ok bool, err error) {
 	if Decision == nil {
-		return nil, false, merr.ErrDecisionTreeNotInit
+		return nil, false, ErrDecisionTreeNotInit
 	}
 	return insertRule(Decision, lvl, keys, rule)
 }
@@ -152,7 +155,7 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 			// Getting a new node. The new node will be the new children node
 			node, err := GetNodeByType(keys[lvl], rule[keys[lvl]].GetValue())
 			if err != nil {
-				return nil, false, errors.Wrapf(err, merr.CreateTreeNodeAtLevelMsg, lvl, keys[lvl])
+				return nil, false, errors.Wrapf(err, CreateTreeNodeAtLevelMsg, lvl, keys[lvl])
 			}
 
 			// Setting up the node with pointers
@@ -244,7 +247,7 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 func LookupID(pkt types.MetaRule) (id string, err error) {
 	// The Decision tree must be initialized before procced
 	if Decision == nil || Decision.Children == nil {
-		return "", merr.ErrDecisionTreeNotInit
+		return "", ErrDecisionTreeNotInit
 	}
 
 	// Initiate a backtracking search the the target
@@ -261,5 +264,5 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 	}
 
 	// Otherwise, rise an error
-	return "", merr.ErrSolutionNotFound
+	return "", ErrSolutionNotFound
 }

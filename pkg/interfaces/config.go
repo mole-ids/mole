@@ -14,8 +14,7 @@
 package interfaces
 
 import (
-	"fmt"
-
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -39,15 +38,15 @@ func InitConfig() (*Config, error) {
 
 	// Check the minimal options
 	if config.IFace == "" {
-		return nil, fmt.Errorf("an interface name is needed")
+		return nil, ErrIfaceNotProvided
 	}
 
 	ok, err := validateIface(config.IFace)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, IfaceValidationFaildMsg)
 	}
 	if !ok {
-		return nil, fmt.Errorf("the interface %s is not valid", config.IFace)
+		return nil, errors.Errorf(InvalidIfaceMsg, config.IFace)
 	}
 
 	return config, nil

@@ -15,7 +15,6 @@ package interfaces
 
 import (
 	"github.com/google/gopacket/pfring"
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -24,21 +23,21 @@ import (
 func (iface *Interfaces) InitPFRing() (ring *pfring.Ring, err error) {
 	ring, err = pfring.NewRing(iface.Config.IFace, 65536, pfring.FlagPromisc)
 	if err != nil {
-		return nil, errors.Wrap(err, merr.PFRingCreateObjectMsg)
+		return nil, errors.Wrap(err, PFRingInitFaildMsg)
 	}
 
 	// If there is a BPF fitler then apply it
 	if iface.Config.BPFfilter != "" {
 		if err = ring.SetBPFFilter(iface.Config.BPFfilter); err != nil {
-			return nil, errors.Wrap(err, merr.BPFFilterSetMsg)
+			return nil, errors.Wrap(err, SettingBPFFilterFailedMsg)
 		}
 	}
 
 	err = ring.Enable()
 	if err != nil { // Must do this!, or you don't get packets!
-		return nil, errors.Wrap(err, merr.BPFFilterEnableMsg)
+		return nil, errors.Wrap(err, EnablePFRingFailedMsg)
 	}
 
-	logger.Log.Info(logger.PfRingInitiatedMsg)
+	logger.Log.Info(PFRingEnabledMsg)
 	return ring, nil
 }
