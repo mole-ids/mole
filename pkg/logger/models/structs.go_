@@ -18,34 +18,34 @@ import (
 	"time"
 )
 
-const suricataTimestampFormat = "2006-01-02T15:04:05.999999-0700"
+const SuricataTimestampFormat = "2006-01-02T15:04:05.999999-0700"
 
-type suriTime struct{ time.Time }
+type SuriTime struct{ time.Time }
 
-func (t *suriTime) UnmarshalJSON(b []byte) error {
+func (t *SuriTime) UnmarshalJSON(b []byte) error {
 	data, err := strconv.Unquote(string(b))
 	if err != nil {
 		return err
 	}
-	t.Time, err = time.Parse(suricataTimestampFormat, data)
+	t.Time, err = time.Parse(SuricataTimestampFormat, data)
 	return err
 }
 
-func (t *suriTime) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + t.Time.Format(suricataTimestampFormat) + "\""), nil
+func (t *SuriTime) MarshalJSON() ([]byte, error) {
+	return []byte("\"" + t.Time.Format(SuricataTimestampFormat) + "\""), nil
 }
 
-type alertEvent struct {
+type AlertEvent struct {
 	Action      string `json:"action"`
 	Gid         int    `json:"gid"`
-	SignatureID int    `json:"signature_id"`
+	SignatureID string `json:"signature_id"`
 	Rev         int    `json:"rev"`
 	Signature   string `json:"signature"`
 	Category    string `json:"category"`
 	Severity    int    `json:"severity"`
 }
 
-type dnsEvent struct {
+type DnsEvent struct {
 	Type   string `json:"type"`
 	ID     int    `json:"id"`
 	Rcode  string `json:"rcode"`
@@ -56,7 +56,7 @@ type dnsEvent struct {
 	TxID   int    `json:"tx_id"`
 }
 
-type httpEvent struct {
+type HttpEvent struct {
 	Hostname        string `json:"hostname"`
 	URL             string `json:"url"`
 	HTTPUserAgent   string `json:"http_user_agent"`
@@ -67,7 +67,7 @@ type httpEvent struct {
 	Length          int    `json:"length"`
 }
 
-type fileinfoEvent struct {
+type FileinfoEvent struct {
 	Filename string `json:"filename"`
 	Magic    string `json:"magic"`
 	State    string `json:"state"`
@@ -77,19 +77,19 @@ type fileinfoEvent struct {
 	TxID     int    `json:"tx_id"`
 }
 
-type flowEvent struct {
+type FlowEvent struct {
 	PktsToserver  int       `json:"pkts_toserver"`
 	PktsToclient  int       `json:"pkts_toclient"`
 	BytesToserver int       `json:"bytes_toserver"`
 	BytesToclient int       `json:"bytes_toclient"`
-	Start         *suriTime `json:"start"`
-	End           *suriTime `json:"end"`
+	Start         *SuriTime `json:"start"`
+	End           *SuriTime `json:"end"`
 	Age           int       `json:"age"`
 	State         string    `json:"state"`
 	Reason        string    `json:"reason"`
 }
 
-type tlsEvent struct {
+type TLSEvent struct {
 	Subject     string `json:"subject"`
 	Issuerdn    string `json:"issuerdn"`
 	Fingerprint string `json:"fingerprint"`
@@ -97,7 +97,7 @@ type tlsEvent struct {
 	Version     string `json:"version"`
 }
 
-type statsEvent struct {
+type StatsEvent struct {
 	Uptime  int `json:"uptime"`
 	Capture struct {
 		KernelPackets int `json:"kernel_packets"`
@@ -202,24 +202,23 @@ type statsEvent struct {
 	} `json:"http"`
 }
 
-type sshEvent struct {
-	Client struct {
-		ProtoVersion    string `json:"proto_version"`
-		SoftwareVersion string `json:"software_version"`
-	} `json:"client"`
-	Server struct {
-		ProtoVersion    string `json:"proto_version"`
-		SoftwareVersion string `json:"software_version"`
-	} `json:"server"`
+type SSHEvent struct {
+	Client *SSHEventData `json:"client"`
+	Server *SSHEventData `json:"server"`
 }
 
-type smtpEvent struct {
+type SSHEventData struct {
+	ProtoVersion    string `json:"proto_version"`
+	SoftwareVersion string `json:"software_version"`
+}
+
+type SMTPEvent struct {
 	Helo     string   `json:"helo"`
 	MailFrom string   `json:"mail_from"`
 	RcptTo   []string `json:"rcpt_to"`
 }
 
-type tcpEvent struct {
+type TCPEvent struct {
 	State      string `json:"state"`
 	Syn        bool   `json:"syn"`
 	TCPflags   string `json:"tcp_flags"`
@@ -227,48 +226,50 @@ type tcpEvent struct {
 	TCPflagsTs string `json:"tcp_flags_ts"`
 }
 
-type emailEvent struct {
+type EmailEvent struct {
 	Status string `json:"status"`
+}
+
+type EveEventPacketInfo struct {
+	Linktype int `json:"linktype"`
 }
 
 // EveEvent is the huge struct which can contain a parsed suricata eve.json
 // log event.
 type EveEvent struct {
-	Timestamp *suriTime `json:"timestamp"`
+	Timestamp *SuriTime `json:"timestamp"`
 	EventType string    `json:"event_type"`
 	FlowID    int64     `json:"flow_id,omitempty"`
 	InIface   string    `json:"in_iface,omitempty"`
 	Vlan      int       `json:"vlan,omitempty"`
 	SrcIP     string    `json:"src_ip,omitempty"`
 	SrcPort   int       `json:"src_port,omitempty"`
-	DestIP    string    `json:"dest_ip,omitempty"`
-	DestPort  int       `json:"dest_port,omitempty"`
+	DstIP     string    `json:"dest_ip,omitempty"`
+	DstPort   int       `json:"dest_port,omitempty"`
 	Proto     string    `json:"proto,omitempty"`
 	AppProto  string    `json:"app_proto,omitempty"`
 	TxID      int       `json:"tx_id,omitempty"`
-	TCP       *tcpEvent `json:"tcp,omitempty"`
+	TCP       *TCPEvent `json:"tcp,omitempty"`
 
-	PacketInfo struct {
-		Linktype int `json:"linktype"`
-	} `json:"packet_info,omitempty"`
+	PacketInfo *EveEventPacketInfo `json:"packet_info,omitempty"`
 
 	// Alert Events have some additional high level attributes to the json model
-	Alert            *alertEvent `json:"alert,omitempty"`
+	Alert            *AlertEvent `json:"alert,omitempty"`
 	Payload          string      `json:"payload,omitempty"`
 	PayloadPrintable string      `json:"payload_printable,omitempty"`
 	Stream           int         `json:"stream,omitempty"`
 	Packet           string      `json:"packet,omitempty"`
 
 	// SMTP Events have some additional high level attributes to the json model
-	SMTP *smtpEvent `json:"smtp,omitempty"`
+	SMTP *SMTPEvent `json:"smtp,omitempty"`
 
 	// Other sub event_types
-	Email    *emailEvent    `json:"email,omitempty"`
-	DNS      *dnsEvent      `json:"dns,omitempty"`
-	HTTP     *httpEvent     `json:"http,omitempty"`
-	Fileinfo *fileinfoEvent `json:"fileinfo,omitempty"`
-	Flow     *flowEvent     `json:"flow,omitempty"`
-	SSH      *sshEvent      `json:"ssh,omitempty"`
-	TLS      *tlsEvent      `json:"tls,omitempty"`
-	Stats    *statsEvent    `json:"stats,omitempty"`
+	Email    *EmailEvent    `json:"email,omitempty"`
+	DNS      *DnsEvent      `json:"dns,omitempty"`
+	HTTP     *HttpEvent     `json:"http,omitempty"`
+	Fileinfo *FileinfoEvent `json:"fileinfo,omitempty"`
+	Flow     *FlowEvent     `json:"flow,omitempty"`
+	SSH      *SSHEvent      `json:"ssh,omitempty"`
+	TLS      *TLSEvent      `json:"tls,omitempty"`
+	Stats    *StatsEvent    `json:"stats,omitempty"`
 }

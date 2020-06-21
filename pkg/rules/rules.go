@@ -20,7 +20,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -40,13 +39,13 @@ func NewManager() (manager *Manager, err error) {
 	manager.Config, err = InitConfig()
 
 	if err != nil {
-		return nil, errors.Wrap(err, merr.InitRulesManagerMsg)
+		return nil, errors.Wrap(err, RulesManagerInitFailedMsg)
 	}
 
 	// Load rules
 	err = manager.LoadRules()
 	if err != nil {
-		return nil, errors.Wrap(err, merr.LoadingRulesMsg)
+		return nil, errors.Wrap(err, LoadingRulesFailedMsg)
 	}
 
 	return manager, err
@@ -60,8 +59,7 @@ var (
 	varRe          = regexp.MustCompile(`(?i)\$\w+`)
 	includeRe      = regexp.MustCompile(`(?i)\s*include\s+`)
 	removeBlanksRe = regexp.MustCompile(`[\t\r\n]+`)
-	// splitRE        = regexp.MustCompile(`(?img)rule(?:[^\n}]|\n[^\n])+`)
-	splitRE = regexp.MustCompile(`(?im)}\s*rule`)
+	splitRE        = regexp.MustCompile(`(?im)}\s*rule`)
 
 	// the following regexp are used to pre-procces the rules
 	srcAnyPreprocRE          = regexp.MustCompile(`src\s*=\s*"any"`)
@@ -75,22 +73,28 @@ var (
 // LoadRules load the rules defined either in the rulesIndex or rulesDir flags
 func (ma *Manager) LoadRules() (err error) {
 	if ma.Config.RulesIndex == "" && ma.Config.RulesFolder == "" {
-		return merr.ErrRuleOrIndexNotDefined
+		return ErrIndexOrRuleFolderPathRequired
 	}
 
 	start := time.Now()
 	if ma.Config.RulesIndex != "" {
-		logger.Log.Infof(logger.RulesIndexFileMsg, ma.Config.RulesIndex)
-		ma.loadRulesByIndex()
+		logger.Log.Infof(IndexFileUsedMsg, ma.Config.RulesIndex)
+		err = ma.loadRulesByIndex()
+		if err != nil {
+			return errors.Wrap(err, WhileLodingRulesByIndexMsg)
+		}
 	}
 
 	if ma.Config.RulesFolder != "" {
-		logger.Log.Infof(logger.RulesFolderMsg, ma.Config.RulesFolder)
-		ma.loadRulesByDir()
+		logger.Log.Infof(RulesFolderUsedMsg, ma.Config.RulesFolder)
+		err = ma.loadRulesByDir()
+		if err != nil {
+			return errors.Wrap(err, WhileLodingRulesByFolderMsg)
+		}
 	}
 
 	elapsed := time.Since(start)
-	logger.Log.Infof(logger.YaraRulesLoadedMsg, len(ma.RawRules), elapsed.Seconds())
+	logger.Log.Infof(TimeElapsedLoadingRulesMsg, len(ma.RawRules), elapsed.Seconds())
 
 	return nil
 }
@@ -98,23 +102,21 @@ func (ma *Manager) LoadRules() (err error) {
 // loadRulesByIndex loads the rules defined in the `idxFile`
 func (ma *Manager) loadRulesByIndex() (err error) {
 	idxFile := ma.Config.RulesIndex
+
 	// Removing comments from the file
 	res, err := removeCAndCppCommentsFile(idxFile)
 	if err != nil {
-		return errors.Wrap(err, merr.WhileLoadingRulesMsg)
+		return errors.Wrap(err, CleanUpRuleMsg)
 	}
+
 	cleanIndex := string(res)
+
 	// Removing empty lines
 	cleanIndex = removeBlanksRe.ReplaceAllString(strings.TrimSpace(cleanIndex), "\n")
-
 	lines := strings.Split(cleanIndex, "\n")
 
 	// Get the base path of the index file
 	base := filepath.Dir(idxFile)
-
-	if err != nil {
-		return errors.Wrapf(err, merr.AbsIndexPathMsg, idxFile)
-	}
 
 	for _, iline := range lines {
 		line := cleanUpLine(iline)
@@ -125,7 +127,7 @@ func (ma *Manager) loadRulesByIndex() (err error) {
 		// Read the rule content based on the rule file real file
 		ruleString, err := ioutil.ReadFile(rulePath)
 		if err != nil {
-			return errors.Wrapf(err, merr.YaraReadFileMsg, rulePath)
+			return errors.Wrapf(err, ReadRuleFileFailedMsg, rulePath)
 		}
 
 		ma.readRuleByRule(ruleString)
@@ -137,15 +139,16 @@ func (ma *Manager) loadRulesByIndex() (err error) {
 // loadRulesByDir loads the rules (files *.yar) placed in `rulesFolder`
 func (ma *Manager) loadRulesByDir() (err error) {
 	rulesFolder := ma.Config.RulesFolder
+
 	files, err := loadFiles(rulesFolder)
 	if err != nil {
-		return errors.Wrap(err, merr.OpenRulesDirMsg)
+		return errors.Wrap(err, ReadRulesFolderFailedMsg)
 	}
 
 	for _, file := range files {
 		ruleString, err := ioutil.ReadFile(file)
 		if err != nil {
-			return errors.Wrapf(err, merr.OpenRuleFilesMsg, file)
+			return errors.Wrapf(err, ReadRuleFileFailedMsg, file)
 		}
 
 		ma.readRuleByRule(ruleString)

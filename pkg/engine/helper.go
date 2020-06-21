@@ -13,12 +13,10 @@
 // limitations under the License.
 package engine
 
-import "github.com/google/gopacket"
-
 // inProtos checks `pkgProto` exists in  `protos`
-func inProtos(pkgProto gopacket.LayerType, protos []gopacket.LayerType) bool {
-	for _, proto := range protos {
-		if proto == pkgProto {
+func inProtos(proto string, protos []string) bool {
+	for _, p := range protos {
+		if p == proto {
 			return true
 		}
 	}

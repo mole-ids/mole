@@ -14,7 +14,9 @@
 package logger
 
 import (
-	"github.com/mole-ids/mole/internal/merr"
+	"strings"
+
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -31,11 +33,18 @@ func New() (err error) {
 	config, err = InitConfig()
 
 	if err != nil {
-		return merr.ErrLoggerInitConfig
+		return errors.Wrap(err, LoggerConfigInitFailedMsg)
 	}
 
-	initAppLogger(config)
-	initMoleLogger(config)
+	err = initAppLogger(config)
+	if err != nil {
+		return errors.Wrap(err, AppLoggerInitFailedMsg)
+	}
+
+	err = initMoleLogger(config)
+	if err != nil {
+		return errors.Wrap(err, MoleLoggerInitFailedMsg)
+	}
 
 	return nil
 }
@@ -50,7 +59,7 @@ func initAppLogger(config *Config) error {
 
 	// INPROVE: Add the posibility to add extra outputs, like stdout and syslog
 	// and even omit stdout
-	if config.LogTo != "/dev/stdout" {
+	if !strings.Contains(config.LogTo, "stdout") {
 		logConfig.OutputPaths = append(logConfig.OutputPaths, config.LogTo)
 	}
 
@@ -69,7 +78,7 @@ func initAppLogger(config *Config) error {
 
 	l, err := logConfig.Build()
 	if err != nil {
-		return merr.ErrLoggerBuildZapFields
+		return ErrBuildingZapFieldsFailed
 	}
 
 	Log = l.Sugar()
@@ -90,7 +99,7 @@ func initMoleLogger(config *Config) error {
 
 	lr, err := logConfig.Build()
 	if err != nil {
-		return merr.ErrLoggerBuildZapFields
+		return ErrBuildingZapFieldsFailed
 	}
 
 	Mole = lr.Sugar()

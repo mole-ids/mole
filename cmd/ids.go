@@ -75,7 +75,7 @@ func init() {
 
 // runIdsCmd executes ids command
 func runIdsCmd(cmd *cobra.Command, args []string) {
-	logger.Log.Info(logger.StartingMoleMsg)
+	logger.Log.Info("starting mole ids")
 	// Ensure user is root
 	ensureRoot()
 

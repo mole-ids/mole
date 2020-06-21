@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/hillu/go-yara"
-	"github.com/mole-ids/mole/internal/merr"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/internal/utils"
 	"github.com/pkg/errors"
@@ -39,13 +38,13 @@ func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 
 	for k, v := range metarule {
 		if v == nil {
-			return metarule, errors.Errorf(merr.BadRuleMetadataMsg, k)
+			return metarule, errors.Errorf(WrongMetadataFieldMsg, k)
 		}
 	}
 
 	for _, k := range types.Keywords {
 		if _, ok := metarule[k]; !ok {
-			return metarule, errors.Errorf(merr.KeywordsNotMeetMsg, k)
+			return metarule, errors.Errorf(KeywordsNotMeetMsg, k)
 		}
 	}
 
@@ -70,7 +69,7 @@ func removeCppStyleComments(content []byte) []byte {
 func removeCAndCppCommentsFile(srcpath string) ([]byte, error) {
 	b, err := ioutil.ReadFile(srcpath)
 	if err != nil {
-		return b, errors.Wrap(err, merr.WhileReadingFileMsg)
+		return b, errors.Wrap(err, WhileReadingFileMsg)
 	}
 	return removeCppStyleComments(removeCStyleComments(b)), nil
 }
