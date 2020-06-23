@@ -172,6 +172,7 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				Time: metadata.Timestamp,
 			}
 			event.EventType = match.Meta["type"].(string)
+			event.InIface = pe.GetIfaceName()
 			event.Proto = meta["proto"].GetValue()
 			event.SrcIP = meta["src"].GetValue()
 			event.DstIP = meta["dst"].GetValue()

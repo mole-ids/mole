@@ -131,12 +131,14 @@ func splitRules(rulesString string) []string {
 	}
 
 	for idx, rule := range rules {
-		if idx%2 == 0 {
+		if idx == 0 {
 			// Add "}"
 			rule = rule + "}"
-		} else {
+		} else if idx == len(rules)-1 {
 			// Add "rule"
 			rule = "rule" + rule
+		} else {
+			rule = "rule" + rule + "}"
 		}
 		rulesTmp = append(rulesTmp, rule)
 	}

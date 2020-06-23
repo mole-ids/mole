@@ -32,8 +32,8 @@ type MRRoot struct {
 	Value string
 }
 
-// NewMRRoot returns a new MRRoot node
-func NewMRRoot() MRRoot {
+// NodeRoot returns a new MRRoot node
+func NodeRoot() MRRoot {
 	return MRRoot{Key: "root"}
 }
 
@@ -61,8 +61,8 @@ type MRProto struct {
 	Value string
 }
 
-// NewMRProto returns a new MRProto node
-func NewMRProto(value interface{}) (MRProto, error) {
+// NodeProto returns a new MRProto node
+func NodeProto(value interface{}) (MRProto, error) {
 	var err error
 	sValue, ok := value.(string)
 	if !ok {
@@ -91,48 +91,102 @@ func (mr MRProto) GetValue() string {
 
 // MRAddress represents proto node
 type MRAddress struct {
-	Key   string
-	Value *net.IPNet
+	Key      string
+	Value    *net.IPNet
+	List     bool
+	NetList  []*net.IPNet
+	Not      bool
+	Original string
 }
 
-// NewSRCMRAddress returns a new MRAddress node with `src` as key
-func NewSRCMRAddress(value interface{}) (MRAddress, error) {
-	return newMRAddress("src", value)
+// NodeSrcAddress returns a new MRAddress node with `src` as key
+func NodeSrcAddress(value interface{}) (MRAddress, error) {
+	return nodeAddress("src", value)
 }
 
-// NewDSTMRAddress returns a new MRAddress node with `dst` as key
-func NewDSTMRAddress(value interface{}) (MRAddress, error) {
-	return newMRAddress("dst", value)
+// NodeDstAddress returns a new MRAddress node with `dst` as key
+func NodeDstAddress(value interface{}) (MRAddress, error) {
+	return nodeAddress("dst", value)
 }
 
-func newMRAddress(key string, value interface{}) (ipnet MRAddress, err error) {
+func nodeAddress(key string, value interface{}) (ipnet MRAddress, err error) {
 	sValue, ok := value.(string)
 	if !ok {
 		return ipnet, ErrConversionType
 	}
+
 	var netv4 *net.IPNet
-	if strings.Contains(sValue, "/") {
-		_, netv4, err = net.ParseCIDR(sValue)
-		if err != nil {
-			return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
+	var netList []*net.IPNet
+	var lst bool
+	var original string = sValue
+	var not bool = false
+
+	if strings.HasPrefix(sValue, "!") {
+		not = true
+		sValue = strings.Replace(sValue, "!", "", -1)
+	}
+
+	if strings.Contains(sValue, SequenceSplitter) {
+		lst = true
+		nets := strings.Split(sValue, SequenceSplitter)
+
+		for _, n := range nets {
+			if !strings.Contains(n, "/") {
+				n = n + "/32"
+			}
+
+			_, nv4, err := net.ParseCIDR(n)
+			if err != nil {
+				return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
+			}
+
+			netList = append(netList, nv4)
 		}
 	} else {
-		_, netv4, err = net.ParseCIDR(sValue + "/32")
+		if !strings.Contains(sValue, "/") {
+			sValue = sValue + "/32"
+		}
+
+		_, netv4, err = net.ParseCIDR(sValue)
 		if err != nil {
 			return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
 		}
 	}
 
 	ipnet = MRAddress{
-		Key:   key,
-		Value: netv4,
+		Key:      key,
+		Value:    netv4,
+		List:     lst,
+		NetList:  netList,
+		Not:      not,
+		Original: original,
 	}
 
 	return ipnet, err
 }
 
+// IsList returns whether the node is a list of address or not
+func (mr MRAddress) IsList() bool {
+	return mr.List
+}
+
+// GetList returns the list of address if any or a empty list
+func (mr MRAddress) GetList() []*net.IPNet {
+	if mr.List {
+		return mr.NetList
+	}
+	return []*net.IPNet{}
+}
+
 // Match checks whether the argument's value match with the node value
 func (mr MRAddress) Match(addr NodeValue) bool {
+	if mr.Not {
+		return !mr.match(addr)
+	}
+	return mr.match(addr)
+}
+
+func (mr MRAddress) match(addr NodeValue) bool {
 	vAddr, ok := addr.(MRAddress)
 	if !ok {
 		return false
@@ -140,6 +194,66 @@ func (mr MRAddress) Match(addr NodeValue) bool {
 
 	var result bool
 
+	if mr.List && vAddr.IsList() {
+		vAddrList := vAddr.GetList()
+
+		for _, myAddr := range mr.NetList {
+			for jdx, addre := range vAddrList {
+				if ones, _ := myAddr.Mask.Size(); ones < 32 {
+					result = myAddr.Contains(addre.IP)
+				} else {
+					result = myAddr.IP.Equal(addre.IP)
+				}
+				if result {
+					vAddrList = append(vAddrList[:jdx], vAddrList[jdx+1:]...)
+				}
+			}
+
+			if len(vAddrList) == 0 {
+				// Avoid looping mr.NetList if vAddrList is over
+				return true
+			}
+		}
+
+		if len(vAddrList) == 0 {
+			return true
+		}
+
+		return false
+
+	} else if mr.List && !vAddr.IsList() {
+		for _, myAddr := range mr.NetList {
+			if ones, _ := myAddr.Mask.Size(); ones < 32 {
+				result = myAddr.Contains(vAddr.Value.IP)
+			} else {
+				result = myAddr.IP.Equal(vAddr.Value.IP)
+			}
+			if result {
+				return result
+			}
+		}
+		return false
+	} else if !mr.List && vAddr.IsList() {
+		vAddrList := vAddr.GetList()
+
+		if len(vAddrList) == 0 {
+			return false
+		}
+
+		if ones, _ := mr.Value.Mask.Size(); ones == 32 {
+			if len(vAddrList) > 1 {
+				return false
+			}
+			return mr.Value.IP.Equal(vAddrList[0].IP)
+		}
+
+		for _, addre := range vAddrList {
+			if res := mr.Value.Contains(addre.IP); !res {
+				return false
+			}
+		}
+		return true
+	}
 	// If node is a net, we should check if the IP is inside that network
 	if ones, _ := mr.Value.Mask.Size(); ones < 32 {
 		result = mr.Value.Contains(vAddr.Value.IP)
@@ -157,7 +271,7 @@ func (mr MRAddress) GetKey() string {
 
 // GetValue returns a string version of the node value
 func (mr MRAddress) GetValue() string {
-	return mr.Value.String()
+	return mr.Original
 }
 
 // MRPort represents proto node
@@ -167,31 +281,40 @@ type MRPort struct {
 	High     int
 	List     bool
 	PortList []int
+	Not      bool
 	Key      string
 	Value    int
 	Original string
 }
 
-// NewSRCMRPort returns a new MRPort node with `sport` as key
-func NewSRCMRPort(value interface{}) (MRPort, error) {
-	return newMRPort("sport", value)
+// NodeSrcMRPort returns a new MRPort node with `sport` as key
+func NodeSrcMRPort(value interface{}) (MRPort, error) {
+	return nodePort("sport", value)
 }
 
-// NewDSTMRPort returns a new MRPort node with `dport` as key
-func NewDSTMRPort(value interface{}) (MRPort, error) {
-	return newMRPort("dport", value)
+// NodeDstMRPort returns a new MRPort node with `dport` as key
+func NodeDstMRPort(value interface{}) (MRPort, error) {
+	return nodePort("dport", value)
 }
 
-func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
+func nodePort(key string, value interface{}) (mrport MRPort, err error) {
 	sValue, ok := value.(string)
 	if !ok {
 		return mrport, ErrConversionType
 	}
 
+	var original string = sValue
 	var rng, lst bool
 	var ports [2]int
 	var portList []int
 	var iValue int
+	var not bool = false
+
+	if strings.HasPrefix(sValue, "!") {
+		not = true
+		sValue = strings.Replace(sValue, "!", "", -1)
+	}
+
 	if strings.Contains(sValue, RangeSplitter) {
 		if strings.Contains(sValue, SequenceSplitter) {
 			return mrport, ErrMixedFormats
@@ -254,9 +377,10 @@ func newMRPort(key string, value interface{}) (mrport MRPort, err error) {
 		High:     ports[1],
 		List:     lst,
 		PortList: portList,
+		Not:      not,
 		Key:      key,
 		Value:    iValue,
-		Original: sValue,
+		Original: original,
 	}
 
 	return mrport, err
@@ -290,6 +414,13 @@ func (mr MRPort) GetRange() (int, int) {
 
 // Match checks whether the argument's value match with the node value
 func (mr MRPort) Match(port NodeValue) bool {
+	if mr.Not {
+		return !mr.match(port)
+	}
+	return mr.match(port)
+}
+
+func (mr MRPort) match(port NodeValue) bool {
 	vPort := port.(MRPort)
 
 	if vPort.IsRange() {
@@ -378,8 +509,8 @@ type MRid struct {
 	Value ulid.ULID
 }
 
-// NewMRid returns a new MRid node
-func NewMRid() (MRid, error) {
+// Nodeid returns a new MRid node
+func Nodeid() (MRid, error) {
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	return MRid{
@@ -407,37 +538,37 @@ func (mr MRid) GetValue() string {
 func GetNodeValue(key string, value interface{}) (NodeValue, error) {
 	switch key {
 	case "proto":
-		node, err := NewMRProto(value)
+		node, err := NodeProto(value)
 		if err != nil {
 			return nil, err
 		}
 		return node, err
 	case "src":
-		node, err := NewSRCMRAddress(value)
+		node, err := NodeSrcAddress(value)
 		if err != nil {
 			return nil, err
 		}
 		return node, err
 	case "sport":
-		node, err := NewSRCMRPort(value)
+		node, err := NodeSrcMRPort(value)
 		if err != nil {
 			return nil, err
 		}
 		return node, err
 	case "dst":
-		node, err := NewDSTMRAddress(value)
+		node, err := NodeDstAddress(value)
 		if err != nil {
 			return nil, err
 		}
 		return node, err
 	case "dport":
-		node, err := NewDSTMRPort(value)
+		node, err := NodeDstMRPort(value)
 		if err != nil {
 			return nil, err
 		}
 		return node, err
 	case "id":
-		node, err := NewMRid()
+		node, err := Nodeid()
 		return node, err
 	}
 	return nil, ErrUndefinedNode

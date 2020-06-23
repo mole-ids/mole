@@ -46,6 +46,7 @@ func (t *MoleTime) GetMoletime() string {
 type EveEvent struct {
 	Timestamp *MoleTime `json:"timestamp"`
 	EventType string    `json:"event_type"`
+	InIface   string    `json:"in_iface,omitempty"`
 	SrcIP     string    `json:"src_ip,omitempty"`
 	SrcPort   int       `json:"src_port,omitempty"`
 	DstIP     string    `json:"dest_ip,omitempty"`
@@ -78,6 +79,7 @@ type MatchArray []MatchString
 func (eve *EveEvent) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("timestamp", eve.Timestamp.GetMoletime())
 	enc.AddString("event_type", eve.EventType)
+	enc.AddString("in_iface", eve.InIface)
 	enc.AddString("src_ip", eve.SrcIP)
 	enc.AddInt("src_port", eve.SrcPort)
 	enc.AddString("dst_ip", eve.DstIP)
