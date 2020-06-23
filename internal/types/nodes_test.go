@@ -19,11 +19,11 @@ import (
 )
 
 func TestMRRoot(t *testing.T) {
-	mr := NewMRRoot()
+	mr := NodeRoot()
 
 	// Root nodes does not implement properly the interface so checking against
 	// any node will be fine
-	mr1, err := NewMRProto("test")
+	mr1, err := NodeProto("test")
 	if err != nil {
 		t.Errorf("Unexpected error %s", err.Error())
 	}
@@ -69,7 +69,7 @@ func TestMRProto(t *testing.T) {
 	}}
 
 	for idx, tc := range testCase {
-		mr, err := NewMRProto(tc.value)
+		mr, err := NodeProto(tc.value)
 
 		if tc.expectedErr && err == nil {
 			t.Errorf("[%d] Expected error but none found", idx)
@@ -86,7 +86,7 @@ func TestMRProto(t *testing.T) {
 			t.Errorf("[%d] Expecting value to be %s, but found %s", idx, tc.value, mr.GetValue())
 		}
 
-		mr1, _ := NewMRProto(tc.value2)
+		mr1, _ := NodeProto(tc.value2)
 
 		res := mr.Match(mr1)
 		if res != tc.match {
@@ -225,7 +225,7 @@ func TestMRPort(t *testing.T) {
 	}}
 
 	for idx, tc := range testCase {
-		mr, err := NewSRCMRPort(tc.Port)
+		mr, err := NodeSrcMRPort(tc.Port)
 
 		if tc.ExpectedErr && err == nil {
 			t.Errorf("[%d] Expecting error but none found", idx)
@@ -249,7 +249,7 @@ func TestMRPort(t *testing.T) {
 			t.Errorf("[%d] Expecting value to be %s, but found %s", idx, tc.Port, mr.GetValue())
 		}
 
-		mr1, _ := NewSRCMRPort(tc.Port2)
+		mr1, _ := NodeSrcMRPort(tc.Port2)
 
 		res := mr.Match(mr1)
 		if res != tc.Match {
@@ -334,7 +334,7 @@ func Test_MRAddress(t *testing.T) {
 	}}
 
 	for idx, tc := range testCase {
-		mr, err := NewSRCMRAddress(tc.Net)
+		mr, err := NodeSrcAddress(tc.Net)
 
 		if tc.ExpectedErr && err == nil {
 			t.Errorf("[%d] Expecting error but none found", idx)
@@ -362,7 +362,7 @@ func Test_MRAddress(t *testing.T) {
 			t.Errorf("[%d] Expecting value to be %s, but found %s", idx, tc.Net, mr.GetValue())
 		}
 
-		mr1, _ := NewSRCMRAddress(tc.Net2)
+		mr1, _ := NodeSrcAddress(tc.Net2)
 
 		res := mr.Match(mr1)
 		if res != tc.Match {

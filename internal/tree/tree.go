@@ -53,7 +53,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 	middleMap := make(map[string]*yara.Compiler)
 
 	// Initialize the decision tree
-	Decision = New(types.NewMRRoot())
+	Decision = New(types.NodeRoot())
 
 	// Loop though the whole list of rules
 	for _, rule := range rulesList {

@@ -71,7 +71,7 @@ func getDummyData2() []types.MetaRule {
 
 func TestFindInsert(t *testing.T) {
 
-	Decision = New(types.NewMRRoot())
+	Decision = New(types.NodeRoot())
 
 	for _, rule := range getDummyData() {
 		lvl := 0
@@ -114,7 +114,7 @@ func TestLookupID(t *testing.T) {
 	var err error
 
 	data := getDummyData()
-	Decision = New(types.NewMRRoot())
+	Decision = New(types.NodeRoot())
 
 	for _, rule := range data {
 		lvl := 0
@@ -142,7 +142,7 @@ func TestLookupIDNotFound(t *testing.T) {
 
 	rulesMeta := getDummyData()
 
-	Decision = New(types.NewMRRoot())
+	Decision = New(types.NodeRoot())
 
 	lvl := 0
 	_, _, _ = insertRule(Decision, lvl, types.Keywords, rulesMeta[0])

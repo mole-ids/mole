@@ -14,6 +14,7 @@
 package engine
 
 import (
+	"net"
 	"strconv"
 	"strings"
 
@@ -26,7 +27,8 @@ import (
 )
 
 type PacketExtractor struct {
-	Packet gopacket.Packet
+	Packet   gopacket.Packet
+	Metadata *gopacket.PacketMetadata
 
 	NetworkLayer     string
 	TransportLayer   string
@@ -49,7 +51,8 @@ type PacketExtractor struct {
 
 func NewPacketExtractor(pkt gopacket.Packet) *PacketExtractor {
 	return &PacketExtractor{
-		Packet: pkt,
+		Packet:   pkt,
+		Metadata: pkt.Metadata(),
 	}
 }
 
@@ -142,49 +145,57 @@ func (pe *PacketExtractor) GetSCTP() *layers.SCTP {
 	return pe.sctp
 }
 
+func (pe *PacketExtractor) GetIfaceName() string {
+	iface, err := net.InterfaceByIndex(pe.Metadata.InterfaceIndex)
+	if err != nil {
+		return ""
+	}
+	return iface.Name
+}
+
 func (pe *PacketExtractor) GetMetadata() (meta types.MetaRule) {
 	var err error
 	meta = make(types.MetaRule)
 
 	switch pe.NetworkLayer {
 	case "ipv4":
-		meta["src"], err = types.NewSRCMRAddress(pe.ipv4.SrcIP.String())
+		meta["src"], err = types.NodeSrcAddress(pe.ipv4.SrcIP.String())
 		if err != nil {
 			logger.Log.Errorf("while building a IPv4 SRC Node for: %s:any --> %s:any", pe.ipv4.SrcIP.String(), pe.ipv4.DstIP.String())
 		}
-		meta["dst"], err = types.NewDSTMRAddress(pe.ipv4.DstIP.String())
+		meta["dst"], err = types.NodeDstAddress(pe.ipv4.DstIP.String())
 		if err != nil {
 			logger.Log.Errorf("while building a IPv4 DST Node for: %s:any --> %s:any", pe.ipv4.SrcIP.String(), pe.ipv4.DstIP.String())
 		}
 	}
 
-	meta["proto"], _ = types.NewMRProto(pe.TransportLayer)
+	meta["proto"], _ = types.NodeProto(pe.TransportLayer)
 
 	switch pe.TransportLayer {
 	case "tcp":
-		meta["sport"], err = types.NewSRCMRPort(strconv.Itoa(int(pe.tcp.SrcPort)))
+		meta["sport"], err = types.NodeSrcMRPort(strconv.Itoa(int(pe.tcp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.tcp.SrcPort.String(), meta["dst"].GetValue())
 		}
-		meta["dport"], err = types.NewDSTMRPort(strconv.Itoa(int(pe.tcp.DstPort)))
+		meta["dport"], err = types.NodeDstMRPort(strconv.Itoa(int(pe.tcp.DstPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), pe.tcp.DstPort.String())
 		}
 	case "udp":
-		meta["sport"], err = types.NewSRCMRPort(strconv.Itoa(int(pe.udp.SrcPort)))
+		meta["sport"], err = types.NodeSrcMRPort(strconv.Itoa(int(pe.udp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a UDP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.udp.SrcPort.String(), meta["dst"].GetValue())
 		}
-		meta["dport"], err = types.NewDSTMRPort(strconv.Itoa(int(pe.udp.DstPort)))
+		meta["dport"], err = types.NodeDstMRPort(strconv.Itoa(int(pe.udp.DstPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a UDP DPORT Node for: %s:%s --> %s:%s", meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), pe.udp.DstPort.String())
 		}
 	case "stcp":
-		meta["sport"], err = types.NewSRCMRPort(strconv.Itoa(int(pe.sctp.SrcPort)))
+		meta["sport"], err = types.NodeSrcMRPort(strconv.Itoa(int(pe.sctp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a SCTP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.sctp.SrcPort.String(), meta["dst"].GetValue())
 		}
-		meta["dport"], err = types.NewDSTMRPort(strconv.Itoa(int(pe.sctp.DstPort)))
+		meta["dport"], err = types.NodeDstMRPort(strconv.Itoa(int(pe.sctp.DstPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a SCTP DPORT Node for: %s:%s --> %s:%s", meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), pe.sctp.DstPort.String())
 		}
