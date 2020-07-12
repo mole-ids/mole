@@ -39,6 +39,8 @@ type PacketExtractor struct {
 	Transport   gopacket.Layer
 	Application gopacket.Layer
 
+	transportProto string
+
 	// Network layers
 	ipv4 *layers.IPv4
 
@@ -91,19 +93,19 @@ func (pe *PacketExtractor) AddTransportLayer(typ string, layer gopacket.Layer) e
 		switch typ {
 		case "tcp":
 			pe.tcp, ok = layer.(*layers.TCP)
-
+			pe.transportProto = "tcp"
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
 		case "udp":
 			pe.udp, ok = layer.(*layers.UDP)
-
+			pe.transportProto = "udp"
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
 		case "sctp":
 			pe.sctp, ok = layer.(*layers.SCTP)
-
+			pe.transportProto = "sctp"
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
@@ -123,7 +125,15 @@ func (pe *PacketExtractor) AddApplicationLayer(typ string, layer gopacket.Layer)
 }
 
 func (pe *PacketExtractor) GetPacketPayload() []byte {
-	return pe.Packet.Data()
+	switch pe.transportProto {
+	case "tcp":
+		return pe.tcp.Payload
+	case "udp":
+		return pe.udp.Payload
+	case "sctp":
+		return pe.sctp.Payload
+	}
+	return nil
 }
 
 func (pe *PacketExtractor) GetPacketMetadata() *gopacket.PacketMetadata {
