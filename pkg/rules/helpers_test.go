@@ -22,118 +22,195 @@ import (
 	"testing"
 
 	"github.com/hillu/go-yara"
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/spf13/viper"
 )
 
 func TestInitConfigFromFile(t *testing.T) {
-	startup()
-	initViper(test_config, filepath.Join(test_dir, test_rulesDir))
+	testCase := []struct {
+		rulesFolder string
+		rulesIndex  string
+		vars        map[string]string
+		key         string
+		value       string
+		err         bool
+	}{{
+		rulesFolder: "",
+		rulesIndex:  "",
+		vars:        map[string]string{},
+		key:         "",
+		value:       "",
+		err:         false,
+	}, {
+		rulesFolder: "rules",
+		rulesIndex:  "",
+		vars: map[string]string{
+			"proto": "tcp",
+		},
+		key:   "proto",
+		value: "tcp",
+		err:   false,
+	}}
 
-	if d := viper.GetString("rules.rules_dir"); d != "rules" {
-		t.Error("Flag rules.rules_dir was not defined")
-	}
+	for idx, tc := range testCase {
 
-	if d := viper.GetString("rules.rules_index"); d != "rules/index.yar" {
-		t.Error("Flag rules.rules_index was not defined")
-	}
+		cfg := buildConfig(tc.rulesFolder, tc.rulesIndex, tc.vars)
+		initViper(cfg)
 
-	d := viper.GetStringMapString("rules.variables")
-	if len(d) != 2 {
-		t.Error("Flag rules.variables was not defined or it contains an invalid amount of items")
-	}
+		if d := viper.GetString("rules.rules_dir"); d != tc.rulesFolder {
+			t.Errorf("[%d] Expect flag rules.rules_dir to be %s, but it was not defined", idx, tc.rulesFolder)
+		}
 
-	if val, ok := d["$tcp"]; !ok {
-		t.Error("Falg rules.variables.$tcp is not defined")
-	} else {
-		if val != "tcp" {
-			t.Errorf("Expecting flag rules.variables[$tcp] to have as value tcp, but found %s", val)
+		if d := viper.GetString("rules.rules_index"); d != tc.rulesIndex {
+			t.Errorf("[%d] Expect flag rules.rules_index to be %s, but it was not defined", idx, tc.rulesIndex)
+		}
+
+		d := viper.GetStringMapString("rules.variables")
+
+		if len(d) != len(tc.vars) {
+			t.Errorf("[%d] Expected %d variables in flag rules.variables, but found: %d", idx, len(tc.vars), len(d))
+		}
+
+		if len(tc.vars) != 0 {
+			if val, ok := d[tc.key]; !ok {
+				t.Errorf("[%d] Expecting falg rules.variables.%s to be %s, but it is not defined", idx, tc.key, tc.value)
+			} else {
+				if val != tc.value {
+					t.Errorf("[%d] Expecting flag rules.variables.%s to have as value %s, but found %s", idx, tc.key, tc.value, val)
+				}
+			}
+		} else {
+			if len(d) != 0 {
+				t.Errorf("[%d] Expecting no variables to be defined, but they are (%d var. defined)", idx, len(d))
+			}
 		}
 	}
 }
 
 func TestRemoveCStyleComments(t *testing.T) {
-	res := string(removeCStyleComments([]byte(test_rule)))
+	testCase := []struct {
+		comment  string
+		cstyle   string
+		ccpstyle string
+	}{{
+		comment: `This is a poc /* with C comments */
+		and also has // C++ comment style`,
+		cstyle:   "with C comments",
+		ccpstyle: "C++ comment style",
+	}}
 
-	if strings.Contains(res, test_cstyle) {
-		t.Error("Unexpected C-Style comment found")
-	}
+	for idx, tc := range testCase {
+		res := string(removeCStyleComments([]byte(tc.comment)))
 
-	if !strings.Contains(res, test_cppstyle) {
-		t.Error("Expecting Cpp-Style to be in the result, but none found")
-	}
+		if strings.Contains(res, tc.cstyle) {
+			t.Errorf("[%d] Unexpected C-Style comment found", idx)
+		}
 
-	if strings.Count(res, "strings") != 2 {
-		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
+		if !strings.Contains(res, tc.ccpstyle) {
+			t.Errorf("[%d] Expecting Cpp-Style to be in the result, but none found", idx)
+		}
 	}
 }
 
 func TestRemoveCppStyleComments(t *testing.T) {
-	res := string(removeCppStyleComments([]byte(test_rule)))
+	testCase := []struct {
+		comment  string
+		cstyle   string
+		ccpstyle string
+	}{{
+		comment: `This is a poc /* with C comments */
+		and also has // C++ comment style`,
+		cstyle:   "with C comments",
+		ccpstyle: "C++ comment style",
+	}}
 
-	if strings.Contains(res, test_cppstyle) {
-		t.Error("Unexpected Cpp-Style comment found")
-	}
+	for idx, tc := range testCase {
+		res := string(removeCppStyleComments([]byte(tc.comment)))
 
-	if !strings.Contains(res, test_cstyle) {
-		t.Error("Expecting Cpp-Style to be in the result, but none found")
-	}
+		if !strings.Contains(res, tc.cstyle) {
+			t.Errorf("[%d] Unexpected C-Style comment found", idx)
+		}
 
-	if strings.Count(res, "strings") != 2 {
-		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
+		if strings.Contains(res, tc.ccpstyle) {
+			t.Errorf("[%d] Expecting Cpp-Style to be in the result, but none found", idx)
+		}
 	}
 }
 
 func TestRemoveCAndCppComments(t *testing.T) {
-	res := string(removeCAndCppComments(test_rule))
+	testCase := []struct {
+		comment  string
+		cstyle   string
+		ccpstyle string
+	}{{
+		comment: `This is a poc /* with C comments */
+		and also has // C++ comment style`,
+		cstyle:   "with C comments",
+		ccpstyle: "C++ comment style",
+	}}
 
-	if strings.Contains(res, test_cstyle) {
-		t.Error("Unexpected C-Style comment found")
-	}
+	for idx, tc := range testCase {
+		res := string(removeCAndCppComments(tc.comment))
 
-	if strings.Contains(res, test_cppstyle) {
-		t.Error("Unexpected Cpp-Style comment found")
-	}
+		if strings.Contains(res, tc.cstyle) {
+			t.Errorf("[%d] Unexpected C-Style comment found", idx)
+		}
 
-	if strings.Count(res, "strings") != 1 {
-		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
+		if strings.Contains(res, tc.ccpstyle) {
+			t.Errorf("[%d] Expecting Cpp-Style to be in the result, but none found", idx)
+		}
 	}
 }
 
 func TestRemoveCAndCppCommentsFile(t *testing.T) {
-	f, err := ioutil.TempFile("", "")
-	if err != nil {
-		t.Error("Unexpected error while creating temp file")
+	testCase := []struct {
+		ruleData string
+		path     string
+		cstyle   string
+		ccpstyle string
+	}{{
+		ruleData: `rule { /* C Style */ condition: $}`,
+		path:     filepath.Join(test_dir, "rule_0"),
+		cstyle:   "C Style",
+		ccpstyle: "CPP Style",
+	}, {
+		ruleData: `rule { //* CPP Style condition: $}`,
+		path:     filepath.Join(test_dir, "rule_0"),
+		cstyle:   "C Style",
+		ccpstyle: "CPP Style",
+	}, {
+		ruleData: `rule { //* CPP Style 
+			/* C Style */ condition: $ }`,
+		path:     filepath.Join(test_dir, "rule_0"),
+		cstyle:   "C Style",
+		ccpstyle: "CPP Style",
+	}}
+
+	for idx, tc := range testCase {
+		ioutil.WriteFile(tc.path, []byte(tc.ruleData), os.ModePerm)
+
+		resByte, err := removeCAndCppCommentsFile(tc.path)
+
+		if err != nil {
+			t.Errorf("[%d] Expecting no errors but found: %s", idx, err.Error())
+			continue
+		}
+
+		res := string(resByte)
+
+		if strings.Contains(res, tc.cstyle) {
+			t.Errorf("[%d] Unexpected C-Style comment found", idx)
+		}
+
+		if strings.Contains(res, tc.ccpstyle) {
+			t.Errorf("[%d] Unexpected Cpp-Style comment found", idx)
+		}
+
+		os.Remove(tc.path)
 	}
-	defer os.Remove(f.Name())
 
-	_, err = f.WriteString(test_rule)
-	if err != nil {
-		t.Error("Unexpected error while creating temp file")
-	}
-
-	fname := f.Name()
-
-	resByte, err := removeCAndCppCommentsFile(fname)
-	if err != nil {
-		t.Errorf("Expecting no errors but found: %s", err.Error())
-	}
-
-	res := string(resByte)
-
-	if strings.Contains(res, test_cstyle) {
-		t.Error("Unexpected C-Style comment found")
-	}
-
-	if strings.Contains(res, test_cppstyle) {
-		t.Error("Unexpected Cpp-Style comment found")
-	}
-
-	if strings.Count(res, "strings") != 1 {
-		t.Errorf("Expecting keyword 'strings' appear twice, but found %d", strings.Count(res, "strings"))
-	}
-
-	resByte, err = removeCAndCppCommentsFile(fname + "_")
+	_, err := removeCAndCppCommentsFile("{._.}")
 	if err == nil {
 		t.Error("Expecting error but none found")
 	}
@@ -450,11 +527,11 @@ condition:
 			t.Errorf("[%d] Un expected error: %s", idx, err.Error())
 		}
 
-		if len(res) != len(types.Keywords) {
-			t.Errorf("[%d] Expecting result to have %d keys, but found %d", idx, len(types.Keywords), len(res))
+		if len(res) != len(nodes.Keywords) {
+			t.Errorf("[%d] Expecting result to have %d keys, but found %d", idx, len(nodes.Keywords), len(res))
 		}
 
-		for jdx, k := range types.Keywords {
+		for jdx, k := range nodes.Keywords {
 			if _, ok := res[k]; !ok {
 				t.Errorf("[%d]-[%d] Meta key not found, %s", idx, jdx, k)
 			}

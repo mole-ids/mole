@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/hillu/go-yara"
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/internal/utils"
 	"github.com/pkg/errors"
@@ -29,10 +30,10 @@ import (
 func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 	metarule = make(types.MetaRule)
 	for _, meta := range rule.MetaList() {
-		if utils.InStrings(meta.Identifier, types.Keywords) {
+		if utils.InStrings(meta.Identifier, nodes.Keywords) {
 			// This will never generate an error becauses meta.Identifieris double
 			// checked in the previous conditional
-			metarule[meta.Identifier], _ = types.GetNodeValue(meta.Identifier, meta.Value)
+			metarule[meta.Identifier], _ = nodes.GetNodeValue(meta.Identifier, meta.Value)
 		}
 	}
 
@@ -42,7 +43,7 @@ func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 		}
 	}
 
-	for _, k := range types.Keywords {
+	for _, k := range nodes.Keywords {
 		if _, ok := metarule[k]; !ok {
 			return metarule, errors.Errorf(KeywordsNotMeetMsg, k)
 		}

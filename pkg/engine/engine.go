@@ -73,6 +73,12 @@ func New() (motor *Engine, err error) {
 		return nil, errors.Wrap(err, RulesManagerInitFailMsg)
 	}
 
+	// Load rules
+	err = motor.RulesManager.LoadRules()
+	if err != nil {
+		return nil, errors.Wrap(err, LoadingRulesFailedMsg)
+	}
+
 	// Build a Decision tree and the RuleMap
 	motor.RuleMap, err = tree.FromRules(motor.RulesManager.GetRawRules())
 	if err != nil {

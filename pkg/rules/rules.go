@@ -42,12 +42,6 @@ func NewManager() (manager *Manager, err error) {
 		return nil, errors.Wrap(err, RulesManagerInitFailedMsg)
 	}
 
-	// Load rules
-	err = manager.LoadRules()
-	if err != nil {
-		return nil, errors.Wrap(err, LoadingRulesFailedMsg)
-	}
-
 	return manager, err
 }
 

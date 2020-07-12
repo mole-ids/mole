@@ -14,6 +14,7 @@
 package tree
 
 import (
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/pkg/logger"
 )
@@ -62,13 +63,13 @@ func (bt *Bactracking) HasSolution() bool {
 }
 
 // AddPartial adds partial solution using the NodeValue
-func (bt *Bactracking) AddPartial(node types.NodeValue) {
+func (bt *Bactracking) AddPartial(node nodes.NodeValue) {
 	// Adds the node as a potential solution
 	bt.solution[node.GetKey()] = node
 }
 
 // Accepted check whether the NodeValue is a good candidate for the solution
-func (bt *Bactracking) Accepted(node types.NodeValue) bool {
+func (bt *Bactracking) Accepted(node nodes.NodeValue) bool {
 	// Validates whether `node` match with the one in the target map
 	logger.Log.Debugf("Checking: %s == %s => %t", node.GetValue(), bt.target[node.GetKey()].GetValue(), node.Match(bt.target[node.GetKey()]))
 	return node.Match(bt.target[node.GetKey()])
@@ -85,6 +86,7 @@ func (bt *Bactracking) Backtrack(node *Tree) *Tree {
 			bt.idNode = node.Children
 			return bt.idNode
 		}
+
 		// Otherwise, as we are in the right way go deeper in the tree
 		return bt.Backtrack(node.Children)
 	}

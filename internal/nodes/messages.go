@@ -11,22 +11,24 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package types
+package nodes
 
 import "errors"
 
 const (
 	ConversionTypeMsg         = "type convertion is not allowed"
-	WhileParsingCIDRMsg       = "building a IP node and while parsing CIDR address found"
+	InputDataNotValidMsg      = "input data is not valid"
 	MixedFormatsNotAllowedMsg = "mixed formats are not allowed"
 	RangeExceededMsg          = "port range can not contain more than one range splitter"
 	InvalidPortNumberMsg      = "value %s is not valid port number"
 	PortBaundsNotValidMsg     = "lower port cannot be higher or equal to the higher port in port range"
+	WhileParsingCIDRMsg       = "building a IP node and while parsing CIDR address found"
 	UndefinedNodeMsg          = "undefined node"
 )
 
 var (
 	ErrConversionType     = errors.New(ConversionTypeMsg)
+	ErrInputDataNotValid  = errors.New(InputDataNotValidMsg)
 	ErrMixedFormats       = errors.New(MixedFormatsNotAllowedMsg)
 	ErrRangeExceeded      = errors.New(RangeExceededMsg)
 	ErrPortBoundsNotValid = errors.New(PortBaundsNotValidMsg)

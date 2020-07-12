@@ -23,7 +23,6 @@ const (
 	WrongMetadataFieldMsg            = "wrong metadata entry %s has no value"
 	KeywordsNotMeetMsg               = "metadata keyword %s not found while processing the rule"
 	RulesManagerInitFailedMsg        = "while initiating the rules manager got"
-	LoadingRulesFailedMsg            = "while loading rules got"
 	IndexFileUsedMsg                 = "loading rules using index %s file"
 	RulesFolderUsedMsg               = "loading rules from directory %s"
 	TimeElapsedLoadingRulesMsg       = "loaded %d rules without errors in %fs"

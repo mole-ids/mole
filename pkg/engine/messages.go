@@ -26,6 +26,7 @@ const (
 	CreateTreeFailMsg         = "while generating the Decision tree got"
 	InterfacesInitFailMsg     = "while initialating interfaces got"
 	PFRingInitFailMsg         = "while initiating pf_ring got"
+	LoadingRulesFailedMsg     = "while loading rules got"
 )
 
 var ()

@@ -16,8 +16,15 @@ package tree
 import (
 	"testing"
 
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
+	"github.com/mole-ids/mole/pkg/logger"
 )
+
+func TestMain(tm *testing.M) {
+	logger.New()
+	tm.Run()
+}
 
 func getDummyData() []types.MetaRule {
 	var metarules []types.MetaRule
@@ -36,7 +43,7 @@ func getDummyData() []types.MetaRule {
 	for idx := 0; idx < values; idx++ {
 		meta := make(types.MetaRule)
 		for k, v := range data {
-			node, _ := types.GetNodeValue(k, v[idx])
+			node, _ := nodes.GetNodeValue(k, v[idx])
 			meta[k] = node
 		}
 		metarules = append(metarules, meta)
@@ -61,7 +68,7 @@ func getDummyData2() []types.MetaRule {
 	for idx := 0; idx < values; idx++ {
 		meta := make(types.MetaRule)
 		for k, v := range data {
-			node, _ := types.GetNodeValue(k, v[idx])
+			node, _ := nodes.GetNodeValue(k, v[idx])
 			meta[k] = node
 		}
 		metarules = append(metarules, meta)
@@ -71,11 +78,11 @@ func getDummyData2() []types.MetaRule {
 
 func TestFindInsert(t *testing.T) {
 
-	Decision = New(types.NodeRoot())
+	Decision = New(nodes.NewRoot())
 
 	for _, rule := range getDummyData() {
 		lvl := 0
-		node, ok, err := insertRule(Decision, lvl, types.Keywords, rule)
+		node, ok, err := insertRule(Decision, lvl, nodes.Keywords, rule)
 		if node == nil {
 			t.Error("Expecting node, but a nil was found")
 		}
@@ -114,11 +121,11 @@ func TestLookupID(t *testing.T) {
 	var err error
 
 	data := getDummyData()
-	Decision = New(types.NodeRoot())
+	Decision = New(nodes.NewRoot())
 
 	for _, rule := range data {
 		lvl := 0
-		idNode, _, _ = insertRule(Decision, lvl, types.Keywords, rule)
+		idNode, _, _ = insertRule(Decision, lvl, nodes.Keywords, rule)
 
 		id = idNode.Value.GetValue()
 		ids = append(ids, id)
@@ -142,10 +149,10 @@ func TestLookupIDNotFound(t *testing.T) {
 
 	rulesMeta := getDummyData()
 
-	Decision = New(types.NodeRoot())
+	Decision = New(nodes.NewRoot())
 
 	lvl := 0
-	_, _, _ = insertRule(Decision, lvl, types.Keywords, rulesMeta[0])
+	_, _, _ = insertRule(Decision, lvl, nodes.Keywords, rulesMeta[0])
 
 	id, err = LookupID(rulesMeta[1])
 
