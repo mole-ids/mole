@@ -23,16 +23,16 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         cd build
         sha256sum -b "mole_$GOOS_$GOARCH" > "mole_$GOOS_$GOARCH.sha256"
         cd -
-    fi;
 
-    echo "Download documentation generator"
-    curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
-    
-    echo "Build documentation"
-    "$GOPATH/bin/structor" -o mole-ids -r mole \
-            --force-edit-url \
-            --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/structor-menu.js.gotmpl" \
-            --exp-branch=master --debug
-    chown -R $UID site
+        echo "Download documentation generator"
+        curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+        
+        echo "Build documentation"
+        "$GOPATH/bin/structor" -o mole-ids -r mole \
+                --force-edit-url \
+                --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
+                --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/structor-menu.js.gotmpl" \
+                --exp-branch=master --debug
+        chown -R $UID site
+    fi;
 fi

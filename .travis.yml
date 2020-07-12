@@ -37,7 +37,7 @@ before_script:
   - go mod download
 
 script:
-  - make test
+  - make test-race
 
 before_deploy:
   - ./script/before_deploy.sh

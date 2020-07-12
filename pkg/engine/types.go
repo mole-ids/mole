@@ -65,7 +65,7 @@ func (pe *PacketExtractor) AddNetworkLayer(typ string, layer gopacket.Layer) err
 		var ok bool
 
 		switch typ {
-		case "ipv4":
+		case IPV4:
 			pe.Network = layer
 			pe.NetworkLayer = typ
 			pe.ipv4, ok = layer.(*layers.IPv4)
@@ -91,21 +91,21 @@ func (pe *PacketExtractor) AddTransportLayer(typ string, layer gopacket.Layer) e
 		pe.Transport = layer
 		pe.TransportLayer = typ
 		switch typ {
-		case "tcp":
+		case TCP:
 			pe.tcp, ok = layer.(*layers.TCP)
-			pe.transportProto = "tcp"
+			pe.transportProto = TCP
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
-		case "udp":
+		case UDP:
 			pe.udp, ok = layer.(*layers.UDP)
-			pe.transportProto = "udp"
+			pe.transportProto = UDP
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
-		case "sctp":
+		case SCTP:
 			pe.sctp, ok = layer.(*layers.SCTP)
-			pe.transportProto = "sctp"
+			pe.transportProto = SCTP
 			if !ok {
 				return errors.Errorf("Layer is not %s compatible", typ)
 			}
@@ -126,11 +126,11 @@ func (pe *PacketExtractor) AddApplicationLayer(typ string, layer gopacket.Layer)
 
 func (pe *PacketExtractor) GetPacketPayload() []byte {
 	switch pe.transportProto {
-	case "tcp":
+	case TCP:
 		return pe.tcp.Payload
-	case "udp":
+	case UDP:
 		return pe.udp.Payload
-	case "sctp":
+	case SCTP:
 		return pe.sctp.Payload
 	}
 	return nil
@@ -169,7 +169,7 @@ func (pe *PacketExtractor) GetMetadata() (meta types.MetaRule) {
 	meta = make(types.MetaRule)
 
 	switch pe.NetworkLayer {
-	case "ipv4":
+	case IPV4:
 		meta["src"], err = nodes.NewSrcNet(pe.ipv4.SrcIP.String())
 		if err != nil {
 			logger.Log.Errorf("while building a IPv4 SRC Node for: %s:any --> %s:any", pe.ipv4.SrcIP.String(), pe.ipv4.DstIP.String())
@@ -183,7 +183,7 @@ func (pe *PacketExtractor) GetMetadata() (meta types.MetaRule) {
 	meta["proto"], _ = nodes.NewProto(pe.TransportLayer)
 
 	switch pe.TransportLayer {
-	case "tcp":
+	case TCP:
 		meta["sport"], err = nodes.NewSrcPort(strconv.Itoa(int(pe.tcp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a TCP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.tcp.SrcPort.String(), meta["dst"].GetValue())
@@ -192,7 +192,7 @@ func (pe *PacketExtractor) GetMetadata() (meta types.MetaRule) {
 		if err != nil {
 			logger.Log.Errorf("while building a TCP DPORT Node for: %s:%s --> %s:%s", meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), pe.tcp.DstPort.String())
 		}
-	case "udp":
+	case UDP:
 		meta["sport"], err = nodes.NewSrcPort(strconv.Itoa(int(pe.udp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a UDP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.udp.SrcPort.String(), meta["dst"].GetValue())
@@ -201,7 +201,7 @@ func (pe *PacketExtractor) GetMetadata() (meta types.MetaRule) {
 		if err != nil {
 			logger.Log.Errorf("while building a UDP DPORT Node for: %s:%s --> %s:%s", meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), pe.udp.DstPort.String())
 		}
-	case "sctp":
+	case SCTP:
 		meta["sport"], err = nodes.NewSrcPort(strconv.Itoa(int(pe.sctp.SrcPort)))
 		if err != nil {
 			logger.Log.Errorf("while building a SCTP SPORT Node for: %s:%s --> %s:any", meta["src"].GetValue(), pe.sctp.SrcPort.String(), meta["dst"].GetValue())
