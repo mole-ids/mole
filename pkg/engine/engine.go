@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/tree"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/pkg/interfaces"
@@ -55,6 +56,14 @@ var (
 	moleNetworkProtos     = []string{"ipv4"}
 	moleTransportProtos   = []string{"tcp", "udp", "sctp"}
 	moleApplicationProtos = []string{}
+)
+
+const (
+	IPV4 = "ipv4"
+
+	TCP  = "tcp"
+	UDP  = "udp"
+	SCTP = "sctp"
 )
 
 // New builds a new Engine
@@ -155,11 +164,11 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 	id, err := tree.LookupID(meta)
 	if err != nil {
 		logger.Log.Debugf(NoMatchFoundMsg,
-			meta["proto"].GetValue(),
-			meta["src"].GetValue(),
-			meta["sport"].GetValue(),
-			meta["dst"].GetValue(),
-			meta["dport"].GetValue())
+			meta[nodes.Proto.String()].GetValue(),
+			meta[nodes.SrcNet.String()].GetValue(),
+			meta[nodes.SrcPort.String()].GetValue(),
+			meta[nodes.DstNet.String()].GetValue(),
+			meta[nodes.DstPort.String()].GetValue())
 		return
 	}
 
@@ -179,11 +188,11 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 			}
 			event.EventType = match.Meta["type"].(string)
 			event.InIface = pe.GetIfaceName()
-			event.Proto = meta["proto"].GetValue()
-			event.SrcIP = meta["src"].GetValue()
-			event.DstIP = meta["dst"].GetValue()
-			event.SrcPort, _ = strconv.Atoi(meta["sport"].GetValue())
-			event.DstPort, _ = strconv.Atoi(meta["dport"].GetValue())
+			event.Proto = meta[nodes.Proto.String()].GetValue()
+			event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
+			event.DstIP = meta[nodes.DstNet.String()].GetValue()
+			event.SrcPort, _ = strconv.Atoi(meta[nodes.SrcPort.String()].GetValue())
+			event.DstPort, _ = strconv.Atoi(meta[nodes.DstPort.String()].GetValue())
 
 			event.Alert = models.AlertEvent{
 				Name: match.Rule,
