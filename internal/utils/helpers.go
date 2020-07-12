@@ -13,6 +13,10 @@
 // limitations under the License.
 package utils
 
+import (
+	"net"
+)
+
 // InStrings search a string in a list of strings
 func InStrings(key string, values []string) bool {
 	for _, v := range values {
@@ -27,6 +31,16 @@ func InStrings(key string, values []string) bool {
 func InInts(i int, lport []int) bool {
 	for _, p := range lport {
 		if p == i {
+			return true
+		}
+	}
+	return false
+}
+
+// InNets search a int in a list of nets
+func InNets(i *net.IPNet, lport []*net.IPNet) bool {
+	for _, p := range lport {
+		if p.Contains(i.IP) {
 			return true
 		}
 	}

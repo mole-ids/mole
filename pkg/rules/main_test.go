@@ -29,6 +29,28 @@ var (
 	test_dir string
 )
 
+func TestMain(m *testing.M) {
+	startup()
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
+}
+
+func startup() {
+	var err error
+	logger.New()
+
+	test_dir, err = ioutil.TempDir("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func shutdown() {
+	os.RemoveAll(test_dir)
+}
+
 const (
 	test_rulesDir   = "./rules"
 	test_rulesIndex = "index.yar"
@@ -79,28 +101,23 @@ rules:
 `
 )
 
-func initViper(cfg, path string) {
-	var err error
+func initViper(cfg string) {
 	name := "mole"
 	ext := "yml"
-	fname := name + "." + ext
 
-	fpath := filepath.Join(path, fname)
+	fileName := name + "." + ext
+	filePath := filepath.Join(test_dir, fileName)
 
-	err = os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		fmt.Println("Error creating test directory:", err.Error())
-	}
-
-	err = ioutil.WriteFile(fpath, []byte(cfg), 0655)
+	err := ioutil.WriteFile(filePath, []byte(cfg), 0655)
 	if err != nil {
 		fmt.Println("Error crating mole.yml")
 		fmt.Println("Err: ", err.Error())
 	}
+
 	viper.Reset()
 	viper.SetConfigType("yaml")
 	viper.SetConfigName(name)
-	viper.AddConfigPath(path)
+	viper.AddConfigPath(test_dir)
 
 	err = viper.ReadInConfig()
 	if err != nil {
@@ -108,22 +125,59 @@ func initViper(cfg, path string) {
 	}
 }
 
-func TestMain(m *testing.M) {
-	startup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+func buildConfig(rpath, rindex string, vars map[string]string) string {
+	var variables string
+	tpl := `
+rules:
+  rules_dir: %s
+  rules_index: %s
+  variables:
+%s
+`
+	for k, v := range vars {
+		variables += "    " + k + ": " + v + "\n"
+	}
+
+	return fmt.Sprintf(tpl, rpath, rindex, variables)
 }
 
-func startup() {
+func writeIndex(indexFileName, ruleFileName string) {
+	if indexFileName == "" {
+		return
+	}
+
 	var err error
-	logger.New()
-	test_dir, err = ioutil.TempDir("", "")
+	path := filepath.Join(test_dir, indexFileName)
+	base := filepath.Dir(path)
+
+	err = os.MkdirAll(base, os.ModePerm)
 	if err != nil {
-		log.Fatal(err)
+		logger.Log.Errorf("Error while creating the path for index file: %s", err.Error())
+	}
+
+	i := fmt.Sprintf("include \"%s\"", ruleFileName)
+	err = ioutil.WriteFile(path, []byte(i), os.ModePerm)
+	if err != nil {
+		logger.Log.Errorf("Error while writing test index: %s", err.Error())
 	}
 }
 
-func shutdown() {
-	os.RemoveAll(test_dir)
+func writeRule(ruleFileName, ruleContent string) {
+	if ruleFileName == "" {
+		return
+	}
+
+	var err error
+	path := filepath.Join(test_dir, ruleFileName)
+	base := filepath.Dir(path)
+
+	err = os.MkdirAll(base, os.ModePerm)
+	if err != nil {
+		logger.Log.Errorf("Error while creating the path folders: %s", err.Error())
+	}
+
+	err = ioutil.WriteFile(path, []byte(ruleContent), os.ModePerm)
+	if err != nil {
+		logger.Log.Errorf("Error while writing test rules: %s", err.Error())
+	}
 }

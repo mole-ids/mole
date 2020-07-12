@@ -11,21 +11,28 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package types
+package nodes
 
-import (
-	"github.com/hillu/go-yara"
-	"github.com/mole-ids/mole/internal/nodes"
-)
+import "testing"
 
-// MetaRule defines yara rule metadata
-// MetaRule use as key the Keywords defined also in this package
-type MetaRule map[string]nodes.NodeValue
+func TestRoot(t *testing.T) {
+	nr := NewRoot()
 
-// RuleMapScanner defines the Yara scanners to execute for each ID
-type RuleMapScanner map[string]*yara.Scanner
+	if nr.GetKey() != Root.String() {
+		t.Errorf("Root node's key should be %s, but found %s", Root.String(), nr.GetKey())
+	}
 
-const (
-	// YaraNamespace the Yara rules namespace
-	YaraNamespace = "Mole"
-)
+	if nr.GetValue() != "" {
+		t.Errorf("Root node's value should be a empty string, byt found %s", nr.GetValue())
+	}
+
+	ni := NewID()
+
+	if !nr.MatchB(ni) {
+		t.Error("Root node's MatchB function shoud match anything")
+	}
+
+	if !nr.Match(ni) {
+		t.Error("Root node's Match function shoud match anything")
+	}
+}

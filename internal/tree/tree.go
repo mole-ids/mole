@@ -17,6 +17,7 @@ import (
 	"github.com/hillu/go-yara"
 	"github.com/pkg/errors"
 
+	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/mole-ids/mole/pkg/rules"
@@ -25,7 +26,7 @@ import (
 // Tree implemnts a n-ary tree for storing the decision tree
 type Tree struct {
 	// Value is the node's value
-	Value types.NodeValue
+	Value nodes.NodeValue
 	// Parent points to the parent node
 	Parent *Tree
 	// Next points to the next node in the same lavel
@@ -53,7 +54,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 	middleMap := make(map[string]*yara.Compiler)
 
 	// Initialize the decision tree
-	Decision = New(types.NodeRoot())
+	Decision = New(nodes.NewRoot())
 
 	// Loop though the whole list of rules
 	for _, rule := range rulesList {
@@ -76,7 +77,7 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 		logger.Log.Debugf(AddingRuleMsg, meta["proto"].GetValue(), meta["src"].GetValue(), meta["sport"].GetValue(), meta["dst"].GetValue(), meta["dport"].GetValue())
 
 		// Insert the node according to its metadata
-		idNode, _, err := insertRule(Decision, 0, types.Keywords, meta)
+		idNode, _, err := insertRule(Decision, 0, nodes.Keywords, meta)
 		if err != nil {
 			return nil, errors.Wrapf(err, InsertRuleFailedMsg, yrule.Identifier())
 		}
@@ -116,9 +117,9 @@ func FromRules(rulesList []string) (ruleMap types.RuleMapScanner, err error) {
 }
 
 // New returns a new Tree with a root node
-func New(value types.NodeValue) *Tree {
+func New(value nodes.NodeValue) *Tree {
 	// TODO: control the error when casting
-	nValue := value.(types.NodeValue)
+	nValue := value.(nodes.NodeValue)
 
 	return &Tree{
 		Value:    nValue,
@@ -130,7 +131,7 @@ func New(value types.NodeValue) *Tree {
 
 // GetNodeByType returns a node based on the type of node
 func GetNodeByType(key string, value interface{}) (*Tree, error) {
-	nv, err := types.GetNodeValue(key, value)
+	nv, err := nodes.GetNodeValue(key, value)
 	if err != nil {
 		return New(nv), errors.Wrap(err, WhileGettingNodeByTypeMsg)
 	}
@@ -198,7 +199,7 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 		child = current.Next
 
 		// Checking node value against new node value
-		if match := current.Value.Match(tmpNode.Value); match {
+		if match := current.Value.MatchB(tmpNode.Value); match {
 			// Node values match so we should jump the current level and
 			// carry on with the next one
 			matched = true
@@ -252,7 +253,6 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 
 	// Initiate a backtracking search the the target
 	bt := NewBactracking(pkt)
-
 	// Start the search omitting the root node as it is only an empty node
 	bt.Backtrack(Decision.Children)
 
