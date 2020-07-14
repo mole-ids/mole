@@ -245,10 +245,10 @@ func insertRule(tree *Tree, lvl int, keys []string, rule types.MetaRule) (nodeID
 
 // LookupID search through the Decision tree for a Yara rule that matches with
 // the packet metadata
-func LookupID(pkt types.MetaRule) (id string, err error) {
+func LookupID(pkt types.MetaRule) (id []string, err error) {
 	// The Decision tree must be initialized before procced
 	if Decision == nil || Decision.Children == nil {
-		return "", ErrDecisionTreeNotInit
+		return []string{}, ErrDecisionTreeNotInit
 	}
 
 	// Initiate a backtracking search the the target
@@ -257,12 +257,12 @@ func LookupID(pkt types.MetaRule) (id string, err error) {
 	bt.Backtrack(Decision.Children)
 
 	// If finally there is a solution, just returned it
-	logger.Log.Debugf("<<< Got solution: %t", bt.HasSolution())
-	if bt.HasSolution() {
+	logger.Log.Debugf("<<< Got solution: %t", bt.Solution())
+	if bt.Solution() {
 
 		return bt.GetResult(), nil
 	}
 
 	// Otherwise, rise an error
-	return "", ErrSolutionNotFound
+	return []string{}, ErrSolutionNotFound
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pfring"
+	"github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -161,7 +162,7 @@ func (motor *Engine) extractLayers(pkt gopacket.Packet) {
 func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 	meta := pe.GetMetadata()
 
-	id, err := tree.LookupID(meta)
+	matches, err := tree.LookupID(meta)
 	if err != nil {
 		logger.Log.Debugf(NoMatchFoundMsg,
 			meta[nodes.Proto.String()].GetValue(),
@@ -172,46 +173,51 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 		return
 	}
 
-	if scanner, found := motor.RuleMap[id]; found {
-		matches, err := scanner.ScanMem(pe.GetPacketPayload())
-		if err != nil {
-			logger.Log.Errorf(ScannerScanMemFaildMsg, err.Error())
-			return
-		}
+	logger.Log.Debugf("matching %d rules", len(matches))
+	pp.Println(matches)
 
-		metadata := pe.GetPacketMetadata()
-		for _, match := range matches {
-			var event models.EveEvent
-
-			event.Timestamp = &models.MoleTime{
-				Time: metadata.Timestamp,
-			}
-			event.EventType = match.Meta["type"].(string)
-			event.InIface = pe.GetIfaceName()
-			event.Proto = meta[nodes.Proto.String()].GetValue()
-			event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
-			event.DstIP = meta[nodes.DstNet.String()].GetValue()
-			event.SrcPort, _ = strconv.Atoi(meta[nodes.SrcPort.String()].GetValue())
-			event.DstPort, _ = strconv.Atoi(meta[nodes.DstPort.String()].GetValue())
-
-			event.Alert = models.AlertEvent{
-				Name: match.Rule,
-				Tags: match.Tags,
-				Meta: match.Meta,
+	for _, matchID := range matches {
+		if scanner, found := motor.RuleMap[matchID]; found {
+			matches, err := scanner.ScanMem(pe.GetPacketPayload())
+			if err != nil {
+				logger.Log.Errorf(ScannerScanMemFaildMsg, err.Error())
+				return
 			}
 
-			var matchArr models.MatchArray
-			for _, m := range match.Strings {
-				matchArr = append(matchArr, models.MatchString{
-					Name:   m.Name,
-					Offset: m.Offset,
-					Data:   m.Data,
-				})
+			metadata := pe.GetPacketMetadata()
+			for _, match := range matches {
+				var event models.EveEvent
+
+				event.Timestamp = &models.MoleTime{
+					Time: metadata.Timestamp,
+				}
+				event.EventType = match.Meta["type"].(string)
+				event.InIface = pe.GetIfaceName()
+				event.Proto = meta[nodes.Proto.String()].GetValue()
+				event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
+				event.DstIP = meta[nodes.DstNet.String()].GetValue()
+				event.SrcPort, _ = strconv.Atoi(meta[nodes.SrcPort.String()].GetValue())
+				event.DstPort, _ = strconv.Atoi(meta[nodes.DstPort.String()].GetValue())
+
+				event.Alert = models.AlertEvent{
+					Name: match.Rule,
+					Tags: match.Tags,
+					Meta: match.Meta,
+				}
+
+				var matchArr models.MatchArray
+				for _, m := range match.Strings {
+					matchArr = append(matchArr, models.MatchString{
+						Name:   m.Name,
+						Offset: m.Offset,
+						Data:   m.Data,
+					})
+				}
+
+				event.Matches = matchArr
+
+				logger.Mole.Infow(MainEventOuterMsg, zap.Object(MainEventInnerMsg, &event))
 			}
-
-			event.Matches = matchArr
-
-			logger.Mole.Infow(MainEventOuterMsg, zap.Object(MainEventInnerMsg, &event))
 		}
 	}
 }
