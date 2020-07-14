@@ -105,7 +105,7 @@ func TestLookupIDNotInit(t *testing.T) {
 	data := getDummyData()
 	id, err := LookupID(data[0])
 
-	if id != "" {
+	if len(id) != 0 {
 		t.Errorf("Expecting ID to be empty, but found: %v", id)
 	}
 
@@ -115,7 +115,7 @@ func TestLookupIDNotInit(t *testing.T) {
 }
 
 func TestLookupID(t *testing.T) {
-	var ids []string
+	var ids, resIDS []string
 	var id string
 	var idNode *Tree
 	var err error
@@ -132,19 +132,27 @@ func TestLookupID(t *testing.T) {
 	}
 
 	for idx, pkg := range data {
-		id, err = LookupID(pkg)
+		resIDS, err = LookupID(pkg)
 		if err != nil {
 			t.Errorf("Expecting no errors, but found: %s", err.Error())
 		}
 
-		if id != ids[idx] {
-			t.Errorf("Expecting ID '%s', to be %s", ids[idx], id)
+		not := false
+		for _, id := range resIDS {
+			if id == ids[idx] {
+				not = true
+				break
+			}
+		}
+
+		if !not {
+			t.Errorf("Expecting ID '%s', to be in the result id list, but it is not", ids[idx])
 		}
 	}
 }
 
 func TestLookupIDNotFound(t *testing.T) {
-	var id string
+	var id []string
 	var err error
 
 	rulesMeta := getDummyData()
@@ -160,7 +168,7 @@ func TestLookupIDNotFound(t *testing.T) {
 		t.Error("Expecting error 'solution not found', but nil was found")
 	}
 
-	if id != "" {
+	if len(id) != 0 {
 		t.Errorf("Expecting id to be empty, but found %s", id)
 	}
 }

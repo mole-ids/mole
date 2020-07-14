@@ -22,7 +22,7 @@ const (
 	InterfaceConfigInitFailedMsg = "interfaces configutation failed, because"
 	InterfacesInitMsg            = "interface intiated successfully"
 	InterfacesListFailedMsg      = "unable to list system interfaces, because"
-	PFRingInitFaildMsg           = "unable to crate new pf_ring onject, because"
+	PFRingInitFaildMsg           = "unable to crate new pf_ring object, because"
 	SettingBPFFilterFailedMsg    = "unable to set the BPF filter, because"
 	EnablePFRingFailedMsg        = "while enabling PFRing found"
 	PFRingEnabledMsg             = "PFRing enabled successflly"

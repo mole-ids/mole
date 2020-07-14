@@ -16,6 +16,7 @@ package rules
 import (
 	"path/filepath"
 
+	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -75,6 +76,8 @@ func InitConfig() (*Config, error) {
 	config.Vars["$sctp"] = "sctp"
 	config.Vars["$any_addr"] = "0.0.0.0/0"
 	config.Vars["$any_port"] = "0:65535"
+
+	logger.Log.Debug("Loaded variables", config.Vars)
 
 	return config, err
 }

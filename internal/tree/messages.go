@@ -27,6 +27,7 @@ const (
 	DecisionTreeNotInitMsg    = "decision tree not initialized"
 	CreateTreeNodeAtLevelMsg  = "when creating node at level %d with key %s got"
 	SolutionNotFoundMsg       = "solution not found"
+	BactrackWithNilNode       = "backtracking does not work with nil nodes"
 )
 
 var (
