@@ -142,9 +142,9 @@ func (motor *Engine) extractLayers(pkt gopacket.Packet) {
 	if network != nil {
 		if err = pe.AddNetworkLayer(network.LayerType().String(), network); err == nil {
 
-			trasnport := pkt.TransportLayer()
-			if trasnport != nil {
-				if err = pe.AddTransportLayer(trasnport.LayerType().String(), trasnport); err == nil {
+			transport := pkt.TransportLayer()
+			if transport != nil {
+				if err = pe.AddTransportLayer(transport.LayerType().String(), transport); err == nil {
 
 					application := pkt.ApplicationLayer()
 					if application != nil {

@@ -88,13 +88,13 @@ func nodePort(key string, value interface{}) (nPort NodePort, err error) {
 
 		ports[0], err = strconv.Atoi(portsString[0])
 		if err != nil {
-			// This will never happend as regexp won't allow it, but leave it as
+			// This will never happened as regexp won't allow it, but leave it as
 			// protection
 			return nPort, errors.Errorf(InvalidPortNumberMsg, portsString[0])
 		}
 		ports[1], err = strconv.Atoi(portsString[1])
 		if err != nil {
-			// This will never happend as regexp won't allow it, but leave it as
+			// This will never happened as regexp won't allow it, but leave it as
 			// protection
 			return nPort, errors.Errorf(InvalidPortNumberMsg, portsString[1])
 		}
@@ -109,7 +109,7 @@ func nodePort(key string, value interface{}) (nPort NodePort, err error) {
 			if vs != "" {
 				v, err := strconv.Atoi(vs)
 				if err != nil {
-					// This will never happend as regexp won't allow it, but leave it as
+					// This will never happened as regexp won't allow it, but leave it as
 					// protection
 					return nPort, errors.Errorf(InvalidPortNumberMsg, vs)
 				}

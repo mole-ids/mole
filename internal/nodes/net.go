@@ -76,7 +76,7 @@ func nodeNet(key string, value interface{}) (ipnet NodeNet, err error) {
 
 		_, nv4, err := net.ParseCIDR(n)
 		if err != nil {
-			// This will never happend, but leave it for precaution
+			// This will never happened, but leave it for precaution
 			return ipnet, errors.Wrap(err, WhileParsingCIDRMsg)
 		}
 

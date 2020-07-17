@@ -34,9 +34,6 @@ all: clean install
 build:
 	go build ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
 
-build-prod:
-	go build -race ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
-
 install:
 	go install ${LDFLAGS}
 

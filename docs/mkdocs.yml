@@ -71,6 +71,6 @@ nav:
   - 'Getting Started':
     - 'Concepts' : getting-started/concepts.md
     - 'Quick Start': getting-started/quick-start.md
-    - 'Configuration Introduction': getting-started/configuration-overview.md
     - 'Install Mole': getting-started/install-mole.md
+    - 'Configuration Introduction': getting-started/configuration-overview.md
   - 'Writing rules': writing-rules.md
