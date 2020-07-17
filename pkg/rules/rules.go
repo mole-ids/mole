@@ -160,7 +160,7 @@ func (ma *Manager) readRuleByRule(rule []byte) {
 	}
 }
 
-// GetRawRules retuns the loaded rules in raw format
+// GetRawRules returns the loaded rules in raw format
 func (ma *Manager) GetRawRules() []string {
 	return ma.RawRules
 }
