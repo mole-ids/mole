@@ -3,9 +3,14 @@
 How the Magic Happens
 {: .subtitle }
 
-Mole IDS can be configured issuing arguments when you execute Mole IDS form the command line. But, you can also use a configuration file, which will make your life a little bit easy.
+Mole IDS can be configured issuing arguments when you execute Mole IDS form the
+command line. But, you can also use a configuration file, which will make your
+life a little bit easy.
 
-Mole IDS uses a `YAML` file to define its options and it is called `mole.yml`. `mole.yml` can be placed next to the Mole IDS binary or in `/etc/mole/mole.yml`. Although, you can also define the `mole.yml` location using the command line flag `--config <path>`.
+Mole IDS uses a `YAML` file to define its options and it is called `mole.yml`.
+`mole.yml` can be placed next to the Mole IDS binary or in `/etc/mole/mole.yml`.
+Although, you can also define the `mole.yml` location using the command line
+flag `--config <path>`.
 
 !!! example "Mole IDS configuration falg"
     ```shell
@@ -21,7 +26,8 @@ At the moment the configuration file is splited up in four sections:
 
 ## Interface
 
-The interface section indicates which interface will be used by Mole IDS, if the want to use PF_RING features or you can define a BPF filter.
+The interface section indicates which interface will be used by Mole IDS, if the
+want to use PF_RING features or you can define a BPF filter.
 
 ```yaml
 interface:
@@ -30,18 +36,26 @@ interface:
     bpf: udp dst port not 53
 ```
 
-On the previous example Mole will listen traffic from the `ens33` interface. PF_RING will be used as capturing driver and only the traffic defined in the `bpf` filter will be captured.
+On the previous example Mole will listen traffic from the `ens33` interface.
+PF_RING will be used as capturing driver and only the traffic defined in the
+`bpf` filter will be captured.
 
 !!! warning
     At the moment Mole IDS uses PF_RING for capturing packages and it cannot be dissabled.
 
 ## engine
 
-The engine sections has no options at the moment, this section is defined for future purposes.
+The engine sections has no options at the moment, this section is defined for
+future purposes.
 
 ## rules
 
-This section defines where and how the Yara rules should be loaded. In this secction we defined two entry for loading the rules, one for loading them from a directory so Mole will load all `*.yar` files in that folder without recursion. Second, you can provide a Yara rules index file and Mole will load those rules. Moreover, there is a section for the user to define a set of variables. Those variables can be used later on in the rules.
+This section defines where and how the Yara rules should be loaded. In this secction
+we defined two entry for loading the rules, one for loading them from a directory
+so Mole IDS will load all `*.yar` files in that folder without recursion. Second,
+you can provide a Yara rules index file and Mole will load those rules. Moreover,
+there is a section for the user to define a set of variables. Those variables can
+be used later on in the rules.
 
 ```yaml
 rules:
@@ -51,7 +65,9 @@ rules:
       $HOME_NET: "10.0.0.0/8"
 ```
 
-If you are wondering yourself how to use the variables, I'll show you down below, but if you want to know more about rules, pleae go to [writing rules](/writing-rules/) section.
+If you are wondering yourself how to use the variables, I'll show you down below,
+but if you want to know more about rules, pleae go to
+[writing rules](/writing-rules/) section.
 
 
 ```yara
@@ -63,7 +79,7 @@ rule ExampleRule {
         sport = "any"
         dst = "any"
         sport = "80"
-    
+
     strings:
         $host = "google.com"
 
@@ -75,7 +91,10 @@ rule ExampleRule {
 
 ## logger
 
-Finally, we defined a logging section. This section defines two types of logger, the first one is for Mole IDS where Mole IDS will log all the internal messages, on the other hand, the sencod type of log is for the Mole IDS users. That log will contain a `JSON` object with the matching alert information.
+Finally, we defined a logging section. This section defines two types of logger,
+the first one is for Mole IDS where Mole IDS will log all the internal messages,
+on the other hand, the sencod type of log is for the Mole IDS users. That log will
+contain a `JSON` object with the matching alert information.
 
 ```yaml
 logger:
@@ -87,10 +106,15 @@ logger:
       to: /var/log/mole/alert.json
 ```
 
-`log_to` and `log_level` indicates to Mole IDS where and in which level should log the internal stuff. On th other hand, there is a `mole` entry where the alert logs are defined. `mole.format` is used to output the alerts in different formats and `mole.to` indicates where Mole IDS will write the alerts.
+`log_to` and `log_level` indicates to Mole IDS where and in which level should log
+the internal stuff. On th other hand, there is a `mole` entry where the alert logs
+are defined. `mole.format` is used to output the alerts in different formats and
+`mole.to` indicates where Mole IDS will write the alerts.
 
 !!! warning
-    At the moment there is one unique format avaliable, which is `eve`. That format writes the logs in `JSON` format, but the content of the logs mimics the `eve.json` format from [Suticata IDS](https://suricata-ids.org/).
+    At the moment there is one unique format avaliable, which is `eve`. That format
+    writes the logs in `JSON` format, but the content of the logs mimics the
+    `eve.json` format from [Suticata IDS](https://suricata-ids.org/).
 
 Following there is an example of an alert output.
 

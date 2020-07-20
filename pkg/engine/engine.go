@@ -19,7 +19,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pfring"
-	"github.com/k0kubun/pp"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -174,7 +173,6 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 	}
 
 	logger.Log.Debugf("matching %d rules", len(matches))
-	pp.Println(matches)
 
 	for _, matchID := range matches {
 		if scanner, found := motor.RuleMap[matchID]; found {

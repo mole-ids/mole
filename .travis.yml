@@ -1,3 +1,4 @@
+dist: xenial
 language: go
 os: linux
 
@@ -45,9 +46,12 @@ before_deploy:
 
 deploy:
   - provider: pages
-    github_token: ${GITHUB_TOKEN}
+    token: ${GITHUB_TOKEN}
+    edge: false
+    strategy: git
     local_dir: site
     skip_cleanup: true
     on:
       repo: mole-ids/mole
       all_branches: true
+      condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
