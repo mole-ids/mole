@@ -26,10 +26,10 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
 
         case $(arch) in
         x86_64)
-            export $GOARCH="amd64"
+            export GOARCH="amd64"
         ;;
         i386)
-            export $GOARCH="386"
+            export GOARCH="386"
         ;;
         *)
             echo "Unrecognized architeture " $(arch) 
@@ -50,6 +50,6 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/structor-menu.js.gotmpl" \
-            --exp-branch=master --debug
+            --debug
     chown -R $UID site
 fi
