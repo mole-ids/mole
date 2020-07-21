@@ -17,8 +17,24 @@
 if ! [ "$BEFORE_DEPLOY_RUN" ]; then
     export BEFORE_DEPLOY_RUN=1
 
+    git fetch --tags
+
     if [ x$TRAVIS_TAG != x"" ]; then
         echo "Building binaries"
+        
+        export GOOS="linux"
+
+        case $(arch) in
+        x86_64)
+            export $GOARCH="amd64"
+        ;;
+        i386)
+            export $GOARCH="386"
+        *)
+            echo "Unrecognized architeture " $(arch) 
+        ;;
+        esac
+
         make build
         cd build
         sha256sum -b "mole_$GOOS_$GOARCH" > "mole_$GOOS_$GOARCH.sha256"
