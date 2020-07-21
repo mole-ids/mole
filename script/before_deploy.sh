@@ -30,6 +30,7 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         ;;
         i386)
             export $GOARCH="386"
+        ;;
         *)
             echo "Unrecognized architeture " $(arch) 
         ;;
