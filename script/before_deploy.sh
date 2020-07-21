@@ -21,8 +21,6 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
 
     if [ x$TRAVIS_TAG != x"" ]; then
         echo "Building binaries"
-        
-        export GOOS="linux"
 
         case $(arch) in
         x86_64)
@@ -35,6 +33,8 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
             echo "Unrecognized architeture " $(arch) 
         ;;
         esac
+
+        export GOOS="linux"
 
         make build
         cd build
@@ -50,6 +50,6 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
             --force-edit-url \
             --dockerfile-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/docs.Dockerfile" \
             --menu.js-url="https://raw.githubusercontent.com/mole-ids/mole/master/docs/structor-menu.js.gotmpl" \
-            --debug
+            --exp-branch=master --debug
     chown -R $UID site
 fi
