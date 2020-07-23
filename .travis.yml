@@ -45,14 +45,6 @@ before_deploy:
   - ./script/before_deploy.sh
 
 deploy:
-  - provider: releases
-    api_key: ${GITHUB_TOKEN}
-    file_glob: true
-    file: build/mole_*
-    skip_cleanup: true
-    on:
-      tags: true
-
   - provider: pages
     token: ${GITHUB_TOKEN}
     edge: false
