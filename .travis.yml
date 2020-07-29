@@ -55,4 +55,3 @@ deploy:
       repo: mole-ids/mole
       all_branches: true
       condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
-  
