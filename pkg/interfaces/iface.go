@@ -16,8 +16,17 @@ package interfaces
 import (
 	"net"
 
+	"github.com/google/gopacket"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
+)
+
+const (
+	snapshotLength = 65536
+)
+
+var (
+	pfringAvaliable = false
 )
 
 // Interfaces is in charge to manage interfaces
@@ -40,9 +49,42 @@ func New() (iface *Interfaces, err error) {
 	return iface, nil
 }
 
+// PFRingAvaliable indicated whether PF Ring is enabled
+func (iface *Interfaces) PFRingAvaliable() bool {
+	return pfringAvaliable
+}
+
 // PFRingEnabled indicated whether PF Ring is enabled
 func (iface *Interfaces) PFRingEnabled() bool {
 	return iface.Config.PFRing
+}
+
+// GetHandler returns the data source where the packets will came in from
+func (iface *Interfaces) GetHandler() (handle gopacket.PacketDataSource, err error) {
+	// Enable pf_ring if requested
+	if pfringAvaliable {
+		if iface.Config.PFRing {
+			handle, err = iface.initPFRing()
+			if err != nil {
+				return nil, errors.Wrap(err, PFRingInitFailMsg)
+			}
+		} else {
+			handle, err = iface.initPcap()
+			if err != nil {
+				return nil, errors.Wrap(err, PCAPInitFailMsg)
+			}
+		}
+	} else {
+		if iface.Config.PFRing {
+			logger.Log.Warn(PFRingNotAvaliableMsg)
+		}
+		handle, err = iface.initPcap()
+		if err != nil {
+			return nil, errors.Wrap(err, PCAPInitFailMsg)
+		}
+	}
+
+	return handle, nil
 }
 
 // validateIface validates the interface against the interfaces from the system

@@ -33,15 +33,18 @@ want to use PF_RING features or you can define a BPF filter.
 interface:
     iface: ens33
     pf_ring: true
-    bpf: udp dst port not 53
+    bpf: udp and dst port not 53
 ```
 
 On the previous example Mole will listen traffic from the `ens33` interface.
 PF_RING will be used as capturing driver and only the traffic defined in the
 `bpf` filter will be captured.
 
-!!! warning
-    At the moment Mole IDS uses PF_RING for capturing packages and it cannot be dissabled.
+When setting `interface.pf_ring` to `false` Mole IDS will use libpcap to capture
+packages from the interface.
+
+If Mole IDS was compiled without PF_Ring support and you configure it to use
+the PF_Ring driver, Mole IDS will fall down to libpcap.
 
 ## engine
 
@@ -87,7 +90,6 @@ rule ExampleRule {
         $host
 }
 ```
-
 
 ## logger
 
@@ -173,7 +175,7 @@ Following there is an example of an alert output.
 interface:
     iface: ens33
     pf_ring: true
-    bpf: udp dst port not 53
+    bpf: udp and dst port not 53
 
 engine:
 

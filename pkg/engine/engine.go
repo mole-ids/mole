@@ -18,7 +18,6 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pfring"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -47,8 +46,8 @@ type Engine struct {
 	// the look up query
 	RuleMap types.RuleMapScanner
 
-	// Ring used for sniff packages from pf_ring
-	Ring *pfring.Ring
+	// Handle is the interface handeler that allow Mole to capture traffic
+	Handle gopacket.PacketDataSource
 }
 
 var (
@@ -100,12 +99,9 @@ func New() (motor *Engine, err error) {
 		return nil, errors.Wrap(err, InterfacesInitFailMsg)
 	}
 
-	// Enable pf_ring if requested
-	if motor.Iface.PFRingEnabled() {
-		motor.Ring, err = motor.Iface.InitPFRing()
-		if err != nil {
-			return nil, errors.Wrap(err, PFRingInitFailMsg)
-		}
+	motor.Handle, err = motor.Iface.GetHandler()
+	if err != nil {
+		return nil, errors.Wrap(err, GettingHandlerFailMsg)
 	}
 
 	logger.Log.Info(MainEventInitCompletedMsg)
@@ -120,7 +116,7 @@ func (motor *Engine) Start() {
 	// Start sniffing packages
 	// TODO: Take into account when pf_ring is not enable or another method is
 	// in used
-	packetSource := gopacket.NewPacketSource(motor.Ring, layers.LinkTypeEthernet)
+	packetSource := gopacket.NewPacketSource(motor.Handle, layers.LinkTypeEthernet)
 	for pkt := range packetSource.Packets() {
 		// Checking for network errors
 		if err := pkt.ErrorLayer(); err != nil {
