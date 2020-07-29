@@ -128,3 +128,27 @@ variables already defined and they can not be overwrite, those are:
 
 Finally, there is a variable called `any` that can be used to define any soruce
 or destination address as wel as any source or destination port.
+
+## Examples
+
+Following several rule examples.
+
+### Example 1
+
+```yara
+rule ExampleRule {
+  meta:
+    description = "Port range from 1 to 1024"
+    type = "alert"
+    proto = "tcp"
+    src = "any"
+    sport = "any"
+    dst = "any"
+    dport = "1:1024"
+  strings:
+    $dnp3_header = { 05 64 }
+    $unsolicited_response = { 82 }
+  condition:
+    $dnp3_header at 0 and $unsolicited_response at 12 and #dnp3_header < 2
+}
+```
