@@ -109,7 +109,7 @@ func (bt *Bactracking) Backtrack(node *Tree) {
 		bt.removePartialNode(node.Children)
 
 		var current *Tree
-		child := node.Next
+		child := node.Children.Next
 		for child != nil {
 			current = child
 			child = current.Next
@@ -120,6 +120,19 @@ func (bt *Bactracking) Backtrack(node *Tree) {
 		}
 
 		return
+	}
+
+	if node.Next != nil {
+		var current *Tree
+		child := node.Next
+		for child != nil {
+			current = child
+			child = current.Next
+
+			// For each next node do backtrack
+			bt.Backtrack(current)
+			bt.removePartialNode(current)
+		}
 	}
 
 	return

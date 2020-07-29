@@ -18,34 +18,25 @@ package interfaces
 
 import (
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/pfring"
+	"github.com/google/gopacket/pcap"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
 
-func init() {
-	pfringAvaliable = true
-}
-
-// initPFRing initializes PFRing on the interface defined in the config
-func (iface *Interfaces) initPFRing() (gopacket.PacketDataSource, error) {
-	ring, err := pfring.NewRing(iface.Config.IFace, snapshotLength, pfring.FlagPromisc)
+// initPcap initializes PFRing on the interface defined in the config
+func (iface *Interfaces) initPcap() (gopacket.PacketDataSource, error) {
+	handle, err := pcap.OpenLive(iface.Config.IFace, snapshotLength, true, pcap.BlockForever)
 	if err != nil {
-		return nil, errors.Wrap(err, PFRingInitFaildMsg)
+		return nil, errors.Wrap(err, PCAPInitFaildMsg)
 	}
 
 	// If there is a BPF fitler then apply it
 	if iface.Config.BPFfilter != "" {
-		if err = ring.SetBPFFilter(iface.Config.BPFfilter); err != nil {
+		if err = handle.SetBPFFilter(iface.Config.BPFfilter); err != nil {
 			return nil, errors.Wrap(err, SettingBPFFilterFailedMsg)
 		}
 	}
 
-	err = ring.Enable()
-	if err != nil { // Must do this!, or you don't get packets!
-		return nil, errors.Wrap(err, EnablePFRingFailedMsg)
-	}
-
-	logger.Log.Info(PFRingEnabledMsg)
-	return ring, nil
+	logger.Log.Info(PCAPEnabledMsg)
+	return handle, nil
 }

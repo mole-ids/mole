@@ -23,9 +23,14 @@ const (
 	InterfacesInitMsg            = "interface intiated successfully"
 	InterfacesListFailedMsg      = "unable to list system interfaces, because"
 	PFRingInitFaildMsg           = "unable to crate new pf_ring object, because"
+	PCAPInitFaildMsg             = "unable to crate new pcap object, because"
 	SettingBPFFilterFailedMsg    = "unable to set the BPF filter, because"
 	EnablePFRingFailedMsg        = "while enabling PFRing found"
 	PFRingEnabledMsg             = "PFRing enabled successflly"
+	PCAPEnabledMsg               = "PCAP sniffer enabled successflly"
+	PCAPInitFailMsg              = "while initiating pcap got"
+	PFRingInitFailMsg            = "while initiating pf_ring got"
+	PFRingNotAvaliableMsg        = "PFRing is not avaliable. Falling down to PCAP sniffer"
 )
 
 var (
