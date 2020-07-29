@@ -50,7 +50,7 @@ case uname -s
 esac
 
 git add --all
-git commit -m "Bump $VERSION"
+git commit -S -m "Bump $VERSION"
 git tag -a $VERSION -m "$TAG_MSG"
 
 echo "Job done!"
