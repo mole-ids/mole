@@ -25,8 +25,8 @@ const (
 	RulesManagerInitFailMsg   = "while initialating rules manager got"
 	CreateTreeFailMsg         = "while generating the Decision tree got"
 	InterfacesInitFailMsg     = "while initialating interfaces got"
-	PFRingInitFailMsg         = "while initiating pf_ring got"
 	LoadingRulesFailedMsg     = "while loading rules got"
+	GettingHandlerFailMsg     = "while getting the snffer handler got"
 )
 
 var ()

@@ -161,6 +161,10 @@ $RECYCLE.BIN/
 
 # End of https://www.gitignore.io/api/go,vim,linux,macos,windows,sublimetext,visualstudiocode
 
+# Build System
+.lock*
+.waf*
+
 # Custom
 build/
 c.out
