@@ -40,7 +40,7 @@ if [ -z $TAG_MSG ]; then
     TAG_MSG="Mole IDS $VERSION"
 fi
 
-case uname -s
+case "$(uname -s)" in
     Darwin)
         sed -i "" -E "s/STRUCTOR_LATEST_TAG=.*$/STRUCTOR_LATEST_TAG=$VERSION/g" .travis.yml
     ;;
@@ -49,10 +49,7 @@ case uname -s
     ;;
 esac
 
-git add --all
-git commit -S -m "Bump $VERSION"
-git tag -a $VERSION -m "$TAG_MSG"
-
+g
 echo "Job done!"
 echo
 echo "Release $VERSION is ready to be pushed"
