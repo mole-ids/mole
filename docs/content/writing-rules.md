@@ -94,7 +94,6 @@ Origin port of the packet. It can be a port, a list of ports or a range of ports
 Example values:
 
 * 1234
-* 1-10
 * 10:100
 * 1,2,3
 
