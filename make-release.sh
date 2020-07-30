@@ -17,6 +17,11 @@ if ! [ -x "$(command -v git)" ]; then
   exit 1
 fi
 
+if ! [ -x "$(command -v git-chglog)" ]; then
+  echo 'Error: git-chglog is not installed.' >&2
+  exit 1
+fi
+
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 LATEST_TAG=$(git describe --abbrev=0)
 LATEST_COMMIT=$(git rev-parse $BRANCH_NAME | cut -c 1-8)
@@ -49,7 +54,12 @@ case "$(uname -s)" in
     ;;
 esac
 
-g
+git-chglog --no-emoji --next-tag $VERSION -o CHANGELOG.md
+
+git add --all
+git tag -a $VERSION -m "Mole IDS $VERSION"
+git commit -S -m "Bump version $VERSION"
+
 echo "Job done!"
 echo
 echo "Release $VERSION is ready to be pushed"
