@@ -54,11 +54,16 @@ case "$(uname -s)" in
     ;;
 esac
 
-git-chglog --no-emoji --next-tag $VERSION -o CHANGELOG.md
+git-chglog --silent --no-emoji --next-tag $VERSION -o CHANGELOG.md
 
 git add --all
-git tag -a $VERSION -m "Mole IDS $VERSION"
+git tag -a $VERSION -m "$TAG_MSG"
 git commit -S -m "Bump version $VERSION"
+
+echo "Github release information message"
+echo "-------------------------------------------------"
+git-chglog --no-emoji $VERSION
+echo "-------------------------------------------------"
 
 echo "Job done!"
 echo
