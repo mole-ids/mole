@@ -1,7 +1,7 @@
 style: github
 template: CHANGELOG.tpl.md
 info:
-  title: CHANGELOG
+  title: MOLE IDS - CHANGELOG
   repository_url: https://github.com/mole-ids/mole
 options:
   commits:
@@ -12,18 +12,43 @@ options:
         - perf
         - refactor
         - docs
+        - chore
   commit_groups:
+    group_by: Type
+    sort_by: Title
     title_maps:
       feat: Features
       fix: Bug Fixes
       perf: Performance Improvements
       refactor: Code Refactoring
       docs: Documentation
+      chore: Chores
+
   header:
     pattern: "^(\\w*)\\:\\s(.*)$"
     pattern_maps:
       - Type
       - Subject
+
+  issues:
+    prefix:
+      - #
+
+  refs:
+    actions:
+      - Closes
+      - Fixes
+
+  merges:
+    pattern: "^Merge branch '(\\w+)'$"
+    pattern_maps:
+      - Source
+
+  reverts:
+    pattern: "^Revert \"([\\s\\S]*)\"$"
+    pattern_maps:
+      - Header
+
   notes:
     keywords:
       - BREAKING CHANGE
