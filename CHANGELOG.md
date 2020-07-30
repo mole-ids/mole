@@ -1,14 +1,5 @@
 # MOLE IDS - CHANGELOG
 
-<a name="v0.1.2"></a>
-## [v0.1.2] - 2020-07-31
-
-### Chores
-- addinding changelog and autoamte its generation (4664ab0)
-
-### Features
-- Enabled libpcap as an alternative to PF_Ring (365477e)
-
 <a name="v0.1.1"></a>
 ## [v0.1.1] - 2020-07-29
 
