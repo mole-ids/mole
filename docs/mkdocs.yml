@@ -19,8 +19,8 @@ theme:
   feature:
     tabs: false
   palette:
-    primary: 'teal'
-    accent: 'teal'
+    primary: 'light blue'
+    accent: 'light blue'
   i18n:
     prev: 'Previous'
     next: 'Next'
