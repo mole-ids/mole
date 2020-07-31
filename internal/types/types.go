@@ -14,7 +14,7 @@
 package types
 
 import (
-	"github.com/hillu/go-yara"
+	"github.com/hillu/go-yara/v4"
 	"github.com/mole-ids/mole/internal/nodes"
 )
 

@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"github.com/hillu/go-yara/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -172,7 +173,10 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 
 	for _, matchID := range matches {
 		if scanner, found := motor.RuleMap[matchID]; found {
-			matches, err := scanner.ScanMem(pe.GetPacketPayload())
+			var matches yara.MatchRules
+			scanner = scanner.SetCallback(&matches)
+
+			err := scanner.ScanMem(pe.GetPacketPayload())
 			if err != nil {
 				logger.Log.Errorf(ScannerScanMemFaildMsg, err.Error())
 				return
@@ -185,7 +189,12 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				event.Timestamp = &models.MoleTime{
 					Time: metadata.Timestamp,
 				}
-				event.EventType = match.Meta["type"].(string)
+				typ, ok := extractMeta(match.Metas, "type").(string)
+				if !ok {
+					event.EventType = "unkown"
+				} else {
+					event.EventType = typ
+				}
 				event.InIface = pe.GetIfaceName()
 				event.Proto = meta[nodes.Proto.String()].GetValue()
 				event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
@@ -196,7 +205,7 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				event.Alert = models.AlertEvent{
 					Name: match.Rule,
 					Tags: match.Tags,
-					Meta: match.Meta,
+					Meta: toMoleMetaMap(match.Metas),
 				}
 
 				var matchArr models.MatchArray
@@ -214,4 +223,8 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 			}
 		}
 	}
+}
+
+func (motor *Engine) ruleMatching(m []yara.MatchRule, err error) {
+
 }

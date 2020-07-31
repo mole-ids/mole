@@ -1,7 +1,7 @@
 # Writting rules
 
 Mole IDS rule system is built on top of yara. You can find information about
-[writting basic yara rules](https://yara.readthedocs.io/en/v3.11.0/writingrules.html)
+[writting basic yara rules](https://yara.readthedocs.io/en/stable/writingrules.html)
 
 ## Syntax
 

@@ -13,6 +13,11 @@
 // limitations under the License.
 package engine
 
+import (
+	"github.com/hillu/go-yara/v4"
+	"github.com/mole-ids/mole/pkg/logger/models"
+)
+
 // inProtos checks `pkgProto` exists in  `protos`
 func inProtos(proto string, protos []string) bool {
 	for _, p := range protos {
@@ -21,4 +26,23 @@ func inProtos(proto string, protos []string) bool {
 		}
 	}
 	return false
+}
+
+func extractMeta(metas []yara.Meta, key string) interface{} {
+	for _, meta := range metas {
+		if meta.Identifier == key {
+			return meta.Value
+		}
+	}
+	return nil
+}
+
+func toMoleMetaMap(metas []yara.Meta) models.MetaMap {
+	var obj models.MetaMap
+	obj = make(models.MetaMap)
+
+	for _, meta := range metas {
+		obj[meta.Identifier] = meta.Value
+	}
+	return obj
 }

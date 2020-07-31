@@ -19,6 +19,5 @@
 ### Features
 - Added mole logger in engine package (0fc40f9)
 
-[Unreleased]: https://github.com/mole-ids/mole/compare/v0.1.2...HEAD
-[v0.1.2]: https://github.com/mole-ids/mole/compare/v0.1.1...v0.1.2
+[Unreleased]: https://github.com/mole-ids/mole/compare/v0.1.1...HEAD
 [v0.1.1]: https://github.com/mole-ids/mole/compare/v0.1.0...v0.1.1
