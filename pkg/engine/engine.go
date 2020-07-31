@@ -18,8 +18,7 @@ import (
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pfring"
-	"github.com/k0kubun/pp"
+	"github.com/hillu/go-yara/v4"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -48,8 +47,8 @@ type Engine struct {
 	// the look up query
 	RuleMap types.RuleMapScanner
 
-	// Ring used for sniff packages from pf_ring
-	Ring *pfring.Ring
+	// Handle is the interface handeler that allow Mole to capture traffic
+	Handle gopacket.PacketDataSource
 }
 
 var (
@@ -101,12 +100,9 @@ func New() (motor *Engine, err error) {
 		return nil, errors.Wrap(err, InterfacesInitFailMsg)
 	}
 
-	// Enable pf_ring if requested
-	if motor.Iface.PFRingEnabled() {
-		motor.Ring, err = motor.Iface.InitPFRing()
-		if err != nil {
-			return nil, errors.Wrap(err, PFRingInitFailMsg)
-		}
+	motor.Handle, err = motor.Iface.GetHandler()
+	if err != nil {
+		return nil, errors.Wrap(err, GettingHandlerFailMsg)
 	}
 
 	logger.Log.Info(MainEventInitCompletedMsg)
@@ -121,7 +117,7 @@ func (motor *Engine) Start() {
 	// Start sniffing packages
 	// TODO: Take into account when pf_ring is not enable or another method is
 	// in used
-	packetSource := gopacket.NewPacketSource(motor.Ring, layers.LinkTypeEthernet)
+	packetSource := gopacket.NewPacketSource(motor.Handle, layers.LinkTypeEthernet)
 	for pkt := range packetSource.Packets() {
 		// Checking for network errors
 		if err := pkt.ErrorLayer(); err != nil {
@@ -142,9 +138,9 @@ func (motor *Engine) extractLayers(pkt gopacket.Packet) {
 	if network != nil {
 		if err = pe.AddNetworkLayer(network.LayerType().String(), network); err == nil {
 
-			trasnport := pkt.TransportLayer()
-			if trasnport != nil {
-				if err = pe.AddTransportLayer(trasnport.LayerType().String(), trasnport); err == nil {
+			transport := pkt.TransportLayer()
+			if transport != nil {
+				if err = pe.AddTransportLayer(transport.LayerType().String(), transport); err == nil {
 
 					application := pkt.ApplicationLayer()
 					if application != nil {
@@ -174,11 +170,13 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 	}
 
 	logger.Log.Debugf("matching %d rules", len(matches))
-	pp.Println(matches)
 
 	for _, matchID := range matches {
 		if scanner, found := motor.RuleMap[matchID]; found {
-			matches, err := scanner.ScanMem(pe.GetPacketPayload())
+			var matches yara.MatchRules
+			scanner = scanner.SetCallback(&matches)
+
+			err := scanner.ScanMem(pe.GetPacketPayload())
 			if err != nil {
 				logger.Log.Errorf(ScannerScanMemFaildMsg, err.Error())
 				return
@@ -191,7 +189,12 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				event.Timestamp = &models.MoleTime{
 					Time: metadata.Timestamp,
 				}
-				event.EventType = match.Meta["type"].(string)
+				typ, ok := extractMeta(match.Metas, "type").(string)
+				if !ok {
+					event.EventType = "unkown"
+				} else {
+					event.EventType = typ
+				}
 				event.InIface = pe.GetIfaceName()
 				event.Proto = meta[nodes.Proto.String()].GetValue()
 				event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
@@ -202,7 +205,7 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				event.Alert = models.AlertEvent{
 					Name: match.Rule,
 					Tags: match.Tags,
-					Meta: match.Meta,
+					Meta: toMoleMetaMap(match.Metas),
 				}
 
 				var matchArr models.MatchArray
@@ -220,4 +223,8 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 			}
 		}
 	}
+}
+
+func (motor *Engine) ruleMatching(m []yara.MatchRule, err error) {
+
 }

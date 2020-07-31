@@ -16,7 +16,7 @@ package nodes
 import "errors"
 
 const (
-	ConversionTypeMsg         = "type convertion is not allowed"
+	ConversionTypeMsg         = "type conversion is not allowed"
 	InputDataNotValidMsg      = "input data is not valid"
 	MixedFormatsNotAllowedMsg = "mixed formats are not allowed"
 	RangeExceededMsg          = "port range can not contain more than one range splitter"

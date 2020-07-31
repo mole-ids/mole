@@ -26,7 +26,7 @@ func TestMain(tm *testing.M) {
 	tm.Run()
 }
 
-func getDummyData() []types.MetaRule {
+func getDummyMetaRules() []types.MetaRule {
 	var metarules []types.MetaRule
 
 	var data map[string][]string
@@ -48,10 +48,11 @@ func getDummyData() []types.MetaRule {
 		}
 		metarules = append(metarules, meta)
 	}
+
 	return metarules
 }
 
-func getDummyData2() []types.MetaRule {
+func getDummyMetaRules2() []types.MetaRule {
 	var metarules []types.MetaRule
 
 	var data map[string][]string
@@ -80,7 +81,7 @@ func TestFindInsert(t *testing.T) {
 
 	Decision = New(nodes.NewRoot())
 
-	for _, rule := range getDummyData() {
+	for _, rule := range getDummyMetaRules() {
 		lvl := 0
 		node, ok, err := insertRule(Decision, lvl, nodes.Keywords, rule)
 		if node == nil {
@@ -102,7 +103,7 @@ func TestLookupIDNotInit(t *testing.T) {
 	// Avoid any previous initialization
 	Decision = nil
 
-	data := getDummyData()
+	data := getDummyMetaRules()
 	id, err := LookupID(data[0])
 
 	if len(id) != 0 {
@@ -120,7 +121,7 @@ func TestLookupID(t *testing.T) {
 	var idNode *Tree
 	var err error
 
-	data := getDummyData()
+	data := getDummyMetaRules()
 	Decision = New(nodes.NewRoot())
 
 	for _, rule := range data {
@@ -155,7 +156,7 @@ func TestLookupIDNotFound(t *testing.T) {
 	var id []string
 	var err error
 
-	rulesMeta := getDummyData()
+	rulesMeta := getDummyMetaRules()
 
 	Decision = New(nodes.NewRoot())
 
