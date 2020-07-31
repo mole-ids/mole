@@ -47,7 +47,7 @@ func init() {
 	idsCmd.Flags().String("iface", "", "Listen on interface")
 	idsCmd.Flags().String("rulesDir", "", "Yara Rules directory")
 	idsCmd.Flags().String("rulesIndex", "", "Yara Rules directory")
-	idsCmd.Flags().Bool("pfring", true, "Enable PF Ring on the interface")
+	idsCmd.Flags().Bool("pfring", false, "Enable PF Ring on the interface")
 	idsCmd.Flags().String("bpf", "", "BPF filter")
 	idsCmd.Flags().StringSlice("variables", []string{}, "Varaiables value used in the rules")
 	idsCmd.Flags().String("moleLogTo", "", "Mole IDS log destination")
