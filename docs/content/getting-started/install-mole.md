@@ -9,7 +9,7 @@ box. However, the Mole IDS team is working to port Mole to the major platforms.
 
 !!! note "Mole IDS Dependencies & Requirements"
     Mole IDS is build upon two libraries and they have to be installed on the
-    system you want to run Mole IDS. 
+    system you want to run Mole IDS.
 
     * [Yara](https://virustotal.github.io/yara/)
     * [PF_RING](https://www.ntop.org/products/packet-capture/pf_ring/)
@@ -85,13 +85,12 @@ echo pf_ring | sudo tee -a /etc/modules
 
 ### Install Yara
 
-At the moment Mole IDS uses Yara version 3.11.0. We know there is a newer version
-of Yara and we will added asoon as possible.
+Mole IDS uses the latest Yara version avaliable at the moment, which is Yara v4.0.2.
 
 ```shell
-wget https://github.com/VirusTotal/yara/archive/v3.11.0.tar.gz -O yara.tgz
+wget https://github.com/VirusTotal/yara/archive/4.0.2.tar.gz -O yara.tgz
 tar xvfz yara.tgz
-cd yara-3.11.0
+cd yara-4.0.2
 ./bootstrap.sh
 ./configure --enable-magic
 make
