@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/hillu/go-yara"
+	"github.com/hillu/go-yara/v4"
 	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/mole-ids/mole/internal/utils"
@@ -29,7 +29,7 @@ import (
 // GetRuleMetaInfo returns the rule metadata
 func GetRuleMetaInfo(rule yara.Rule) (metarule types.MetaRule, err error) {
 	metarule = make(types.MetaRule)
-	for _, meta := range rule.MetaList() {
+	for _, meta := range rule.Metas() {
 		if utils.InStrings(meta.Identifier, nodes.Keywords) {
 			// This will never generate an error becauses meta.Identifieris double
 			// checked in the previous conditional

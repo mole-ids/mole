@@ -21,7 +21,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hillu/go-yara"
+	"github.com/hillu/go-yara/v4"
 	"github.com/mole-ids/mole/internal/nodes"
 	"github.com/mole-ids/mole/internal/types"
 	"github.com/spf13/viper"
