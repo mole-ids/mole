@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !pf_ring
-
 package interfaces
 
 import (
@@ -25,9 +23,19 @@ import (
 
 // initPcap initializes PFRing on the interface defined in the config
 func (iface *Interfaces) initPcap() (gopacket.PacketDataSource, error) {
-	handle, err := pcap.OpenLive(iface.Config.IFace, snapshotLength, true, pcap.BlockForever)
-	if err != nil {
-		return nil, errors.Wrap(err, PCAPInitFaildMsg)
+	var handle *pcap.Handle
+	var err error
+
+	if iface.ifaceSet() {
+		handle, err = pcap.OpenLive(iface.Config.IFace, snapshotLength, true, pcap.BlockForever)
+		if err != nil {
+			return nil, errors.Wrap(err, LiveSnifferFaildMsg)
+		}
+	} else {
+		handle, err = pcap.OpenOffline(iface.Config.File)
+		if err != nil {
+			return nil, errors.Wrap(err, OfflineSnifferFaildMsg)
+		}
 	}
 
 	// If there is a BPF fitler then apply it
@@ -39,8 +47,4 @@ func (iface *Interfaces) initPcap() (gopacket.PacketDataSource, error) {
 
 	logger.Log.Info(PCAPEnabledMsg)
 	return handle, nil
-}
-
-func (iface *Interfaces) initPFRing() (gopacket.PacketDataSource, error) {
-	return nil, nil
 }

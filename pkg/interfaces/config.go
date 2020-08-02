@@ -22,6 +22,8 @@ import (
 type Config struct {
 	// IFace interface to bind to
 	IFace string
+	// File pcap file to read traffic from
+	File string
 	// PFRing enable pf_ring
 	PFRing bool
 	// BPFfilter BPF filter
@@ -32,13 +34,18 @@ type Config struct {
 func InitConfig() (*Config, error) {
 	config := &Config{
 		IFace:     viper.GetString("interface.iface"),
+		File:      viper.GetString("interface.file"),
 		PFRing:    viper.GetBool("interface.pf_ring"),
 		BPFfilter: viper.GetString("interface.bpf"),
 	}
 
 	// Check the minimal options
-	if config.IFace == "" {
-		return nil, ErrIfaceNotProvided
+	if config.IFace == "" || config.File == "" {
+		return nil, ErrIfaceOrFileNotProvided
+	}
+
+	if config.IFace != "" && config.File != "" {
+		return nil, ErrIfaceAndPcapFile
 	}
 
 	ok, err := validateIface(config.IFace)
@@ -47,6 +54,14 @@ func InitConfig() (*Config, error) {
 	}
 	if !ok {
 		return nil, errors.Errorf(InvalidIfaceMsg, config.IFace)
+	}
+
+	ok, err = validateFilename(config.File)
+	if err != nil {
+		return nil, errors.Wrap(err, PcapFileValidationFaildMsg)
+	}
+	if !ok {
+		return nil, errors.Errorf(InvalidFilenameMsg, config.File)
 	}
 
 	return config, nil

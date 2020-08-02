@@ -15,7 +15,7 @@ options:
         - chore
   commit_groups:
     group_by: Type
-    sort_by: Title
+    sort_by: Type
     title_maps:
       feat: Features
       fix: Bug Fixes

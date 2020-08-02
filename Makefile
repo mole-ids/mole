@@ -35,7 +35,7 @@ build:
 	go build -race ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
 
 build-pfring:
-	go build -race -tags "pf_ring" ${LDFLAGS} -o ${BINDIR}/${BINARY} $(SRC)
+	go build -race -tags "pf_ring" ${LDFLAGS} -o ${BINDIR}/${BINARY}_pfring $(SRC)
 
 install:
 	go install ${LDFLAGS}

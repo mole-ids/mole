@@ -45,6 +45,7 @@ var idsCmd = &cobra.Command{
 func init() {
 	// Configure flags arguments
 	idsCmd.Flags().String("iface", "", "Listen on interface")
+	idsCmd.Flags().String("file", "", "PCAP file to read from")
 	idsCmd.Flags().String("rulesDir", "", "Yara Rules directory")
 	idsCmd.Flags().String("rulesIndex", "", "Yara Rules directory")
 	idsCmd.Flags().Bool("pfring", false, "Enable PF Ring on the interface")
@@ -55,6 +56,7 @@ func init() {
 
 	// Bind flags to configuration file
 	viper.BindPFlag("interface.iface", idsCmd.Flags().Lookup("iface"))
+	viper.BindPFlag("interface.file", idsCmd.Flags().Lookup("file"))
 	viper.BindPFlag("interface.pf_ring", idsCmd.Flags().Lookup("pfring"))
 	viper.BindPFlag("interface.bpf", idsCmd.Flags().Lookup("bpf"))
 
