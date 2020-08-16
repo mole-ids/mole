@@ -31,7 +31,7 @@ install:
         bison \
         flex \
         make \
-        libmagic-dev \
+        libyara-dev \
         libssl-dev \
         libpcap-dev \
         gcc-multilib \
