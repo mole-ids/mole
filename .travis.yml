@@ -36,7 +36,8 @@ install:
         libpcap-dev \
         gcc-multilib \
         g++-multilib \
-        && sudo -E ./script/install_pfring.sh
+        && sudo -E ./script/install-pfring.sh \
+        && sudo -E ./.travis/install-yara.sh
     fi
 
 before_script:
