@@ -22,7 +22,7 @@ env:
 
 install:
   - >
-    if [ $TRAVIS_OS_NAME = linux ]; then
+    if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
       sudo -E apt-get -yq update;
       sudo -E apt-get -yqq --no-install-suggests --no-install-recommends install \
         build-essential \
@@ -37,15 +37,19 @@ install:
         gcc-multilib \
         g++-multilib \
         && sudo -E ./script/install_pfring.sh
-    else
-      brew install yara libpcap
     fi
 
 before_script:
-  - go mod download
+  - >
+    if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
+      go mod download
+    fi
 
 script:
-  - make test-race
+  - >
+    if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
+      make test-race
+    fi
 
 before_deploy:
   - ./.travis/before_deploy.sh

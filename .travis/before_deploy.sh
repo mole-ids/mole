@@ -20,22 +20,22 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
     cd "$TRAVIS_BUILD_DIR"
     git fetch --tags
 
-    if [ ! -z $TRAVIS_TAG ]; then
+    if ! [ -z $TRAVIS_TAG ]; then
         echo "#############################"
         echo "##     MOLE X-COMPILER     ##"
         echo "#############################"
         echo 
-        if [ $TRAVIS_OS_NAME == "linux" ]; then
+        if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
             bash .travis/docker-xbuild.sh
             sha256sum build/mole_{linux,windows}* >> build/mole_sha256_checksum.txt
         fi
-        if [ $TRAVIS_OS_NAME == "osx" ]; then
+        if [ x"$TRAVIS_OS_NAME" = x"osx" ]; then
             bash .travis/macosx-build.sh
             shasum -a 256 -b build/mole_darwin* >> build/mole_sha256_checksum.txt
         fi        
     fi
 
-    if [ $TRAVIS_OS_NAME == "linux" ]; then
+    if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
         echo "Download documentation generator"
         curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
         
