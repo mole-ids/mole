@@ -71,6 +71,10 @@ nav:
   - 'Getting Started':
     - 'Concepts' : getting-started/concepts.md
     - 'Quick Start': getting-started/quick-start.md
-    - 'Install Mole': getting-started/install-mole.md
+    - 'Getting Mole': getting-started/getting-mole.md
     - 'Configuration Introduction': getting-started/configuration-overview.md
   - 'Writing rules': writing-rules.md
+  - 'Mole IDS Commands': mole-commands.md
+  - 'Mole development': 
+    - 'Compiling': mole-devel/compiling.md
+    - 'Development': mole-devel/development.md

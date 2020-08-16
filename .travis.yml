@@ -1,9 +1,11 @@
-dist: xenial
+
 language: go
-os: linux
+os:
+  - linux
+  - osx
 
 go:
-  - 1.14.x
+  - 1.15.x
 
 git:
   depth: false
@@ -14,26 +16,28 @@ services:
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
-    - STRUCTOR_LATEST_TAG=v0.1.2
+    - STRUCTOR_LATEST_TAG=v0.0.0
     - GO111MODULE=on
+    - CGO_ENABLED=1
 
 install:
-  - sudo -E apt-get -yq update
   - >
-    sudo -E apt-get -yq --no-install-suggests --no-install-recommends install \
-      build-essential \
-      autoconf \
-      libtool \
-      bison \
-      flex \
-      make \
-      libmagic-dev \
-      libssl-dev \
-      libpcap-dev \
-      g++-multilib \
-      docker-ce=${DOCKER_VERSION}*
-  - sudo -E ./script/travis_setup.sh
-  - sudo -E ./script/install_yara.sh
+    if [ $TRAVIS_OS_NAME = linux ]; then
+      sudo -E apt-get -yq update;
+      sudo -E apt-get -yqq --no-install-suggests --no-install-recommends install \
+        build-essential \
+        autoconf \
+        libtool \
+        bison \
+        flex \
+        make \
+        libmagic-dev \
+        libssl-dev \
+        libpcap-dev \
+        gcc-multilib \
+        g++-multilib \
+        && sudo -E ./travis/travis_pfring.sh
+    fi
 
 before_script:
   - go mod download
@@ -42,7 +46,7 @@ script:
   - make test-race
 
 before_deploy:
-  - ./script/before_deploy.sh
+  - ./.travis/before_deploy.sh
 
 deploy:
   - provider: pages
@@ -55,3 +59,15 @@ deploy:
       repo: mole-ids/mole
       all_branches: true
       condition: $TRAVIS_BRANCH =~ ^master$|^v[0-9.]+$
+  
+  - provider: releases
+    api_key: ${GITHUB_TOKEN}
+    file_glob: true
+    file: build/mole*
+    overwrite: true
+    skip_cleanup: true
+    draft: false
+    on:
+      repo: mole-ids/mole
+      all_branches: true
+      tags: true

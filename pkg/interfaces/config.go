@@ -40,7 +40,7 @@ func InitConfig() (*Config, error) {
 	}
 
 	// Check the minimal options
-	if config.IFace == "" || config.File == "" {
+	if config.IFace == "" && config.File == "" {
 		return nil, ErrIfaceOrFileNotProvided
 	}
 
@@ -48,20 +48,25 @@ func InitConfig() (*Config, error) {
 		return nil, ErrIfaceAndPcapFile
 	}
 
-	ok, err := validateIface(config.IFace)
-	if err != nil {
-		return nil, errors.Wrap(err, IfaceValidationFaildMsg)
-	}
-	if !ok {
-		return nil, errors.Errorf(InvalidIfaceMsg, config.IFace)
+	if config.IFace != "" {
+		ok, err := validateIface(config.IFace)
+		if err != nil {
+			return nil, errors.Wrap(err, IfaceValidationFaildMsg)
+		}
+		if !ok {
+			return nil, errors.Errorf(InvalidIfaceMsg, config.IFace)
+		}
 	}
 
-	ok, err = validateFilename(config.File)
-	if err != nil {
-		return nil, errors.Wrap(err, PcapFileValidationFaildMsg)
-	}
-	if !ok {
-		return nil, errors.Errorf(InvalidFilenameMsg, config.File)
+	if config.File != "" {
+		ok, err := validateFilename(config.File)
+		if err != nil {
+			return nil, errors.Wrap(err, PcapFileValidationFaildMsg)
+		}
+		if !ok {
+			return nil, errors.Errorf(InvalidFilenameMsg, config.File)
+		}
+
 	}
 
 	return config, nil

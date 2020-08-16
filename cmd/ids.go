@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"syscall"
 
 	"github.com/mole-ids/mole/pkg/engine"
@@ -37,7 +38,10 @@ var idsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		logger.New()
+		err := logger.New()
+		if err != nil {
+			fmt.Printf("Err: %s\n", err.Error())
+		}
 	},
 	Run: runIdsCmd,
 }
@@ -92,8 +96,18 @@ func runIdsCmd(cmd *cobra.Command, args []string) {
 
 // ensureRoot checks whether mole is been running as root usser
 func ensureRoot() {
-	if uid := syscall.Getuid(); uid != 0 {
-		logger.Log.Fatal("you need to be root")
+	switch runtime.GOOS {
+	case "windows":
+		_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+		if err != nil {
+			logger.Log.Fatal("Run Mole as Administrator user")
+		}
+	case "darwin":
+		fallthrough
+	case "linux":
+		if uid := syscall.Getuid(); uid != 0 {
+			logger.Log.Fatal("Run Mole as root user")
 
+		}
 	}
 }

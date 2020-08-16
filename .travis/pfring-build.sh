@@ -14,16 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -ex
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    set -ex
 
-cwd=$(pwd)
-cd /tmp
+    cwd=$(pwd)
+    cd /tmp
 
-wget http://apt-stable.ntop.org/`lsb_release -r | cut -f2`/all/apt-ntop-stable.deb
-sudo dpkg -i apt-ntop-stable.deb
-sudo apt-get update
-sudo apt-get install -y linux-headers-`uname -r` pfring-dkms pfring libpcap-dev
-sudo modprobe pf_ring
-sudo modprobe tun
+    wget http://apt-stable.ntop.org/`lsb_release -r | cut -f2`/all/apt-ntop-stable.deb
+    sudo dpkg -i apt-ntop-stable.deb
+    sudo apt-get update
+    sudo apt-get install -yqq linux-headers-`uname -r` pfring-dkms pfring libpcap-dev
+    sudo modprobe pf_ring
+    sudo modprobe tun
 
-cd "$cwd"
+    cd "$cwd"
+fi
