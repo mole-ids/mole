@@ -14,6 +14,7 @@
 package engine
 
 import (
+	"runtime"
 	"strconv"
 
 	"github.com/google/gopacket"
@@ -195,7 +196,11 @@ func (motor *Engine) checkAndFire(pe *PacketExtractor) {
 				} else {
 					event.EventType = typ
 				}
-				event.InIface = pe.GetIfaceName()
+				if runtime.GOOS == "windows" {
+					event.InIface = motor.Iface.TrafficHandler()
+				} else {
+					event.InIface = pe.GetIfaceName()
+				}
 				event.Proto = meta[nodes.Proto.String()].GetValue()
 				event.SrcIP = meta[nodes.SrcNet.String()].GetValue()
 				event.DstIP = meta[nodes.DstNet.String()].GetValue()

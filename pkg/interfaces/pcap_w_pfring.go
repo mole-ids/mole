@@ -12,31 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build pf_ring
+// +build !pf_ring
 
 package interfaces
 
 import (
 	"github.com/google/gopacket"
-	"github.com/google/gopacket/pcap"
-	"github.com/mole-ids/mole/pkg/logger"
-	"github.com/pkg/errors"
 )
 
-// initPcap initializes PFRing on the interface defined in the config
-func (iface *Interfaces) initPcap() (gopacket.PacketDataSource, error) {
-	handle, err := pcap.OpenLive(iface.Config.IFace, snapshotLength, true, pcap.BlockForever)
-	if err != nil {
-		return nil, errors.Wrap(err, PCAPInitFaildMsg)
-	}
-
-	// If there is a BPF fitler then apply it
-	if iface.Config.BPFfilter != "" {
-		if err = handle.SetBPFFilter(iface.Config.BPFfilter); err != nil {
-			return nil, errors.Wrap(err, SettingBPFFilterFailedMsg)
-		}
-	}
-
-	logger.Log.Info(PCAPEnabledMsg)
-	return handle, nil
+func (iface *Interfaces) initPFRing() (gopacket.PacketDataSource, error) {
+	return nil, nil
 }

@@ -14,9 +14,10 @@
 package interfaces
 
 import (
-	"net"
+	"os"
 
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/pcap"
 	"github.com/mole-ids/mole/pkg/logger"
 	"github.com/pkg/errors"
 )
@@ -87,10 +88,26 @@ func (iface *Interfaces) GetHandler() (handle gopacket.PacketDataSource, err err
 	return handle, nil
 }
 
+func (iface *Interfaces) ifaceSet() bool {
+	return iface.Config.IFace != ""
+}
+
+func (iface *Interfaces) pcapFileSet() bool {
+	return iface.Config.File != ""
+}
+
+func (iface *Interfaces) TrafficHandler() string {
+	if iface.ifaceSet() {
+		return iface.Config.IFace
+	}
+
+	return iface.Config.File
+}
+
 // validateIface validates the interface against the interfaces from the system
 func validateIface(interfaceName string) (ok bool, err error) {
 	ok = false
-	inets, err := net.Interfaces()
+	inets, err := pcap.FindAllDevs()
 	if err != nil {
 		return ok, errors.Wrap(err, InterfacesListFailedMsg)
 	}
@@ -100,6 +117,13 @@ func validateIface(interfaceName string) (ok bool, err error) {
 			ok = true
 			break
 		}
+	}
+	return ok, nil
+}
+
+func validateFilename(filename string) (ok bool, err error) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return false, ErrPcapFileNoExist
 	}
 	return ok, nil
 }
