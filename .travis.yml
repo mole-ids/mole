@@ -37,6 +37,8 @@ install:
         gcc-multilib \
         g++-multilib \
         && sudo -E ./script/install_pfring.sh
+    else
+      brew install yara libpcap
     fi
 
 before_script:
