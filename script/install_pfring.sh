@@ -28,9 +28,6 @@ cd ../userland/lib
 cd ../libpcap
 ./configure --prefix=/usr/local/pfring && make && sudo make install
 
-cd ../tcpdump
-./configure --prefix=/usr/local/pfring && make && sudo make install
-
 sudo ldconfig
 export CGO_LDFLAGS="-L/usr/local/pfring/lib/"
 export CGO_CFLAGS="-I/usr/local/pfring/include/"

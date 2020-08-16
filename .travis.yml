@@ -16,7 +16,7 @@ services:
 env:
   global:
     - STRUCTOR_VERSION=v1.10.0
-    - STRUCTOR_LATEST_TAG=v0.0.0
+    - STRUCTOR_LATEST_TAG=v0.1.1
     - GO111MODULE=on
     - CGO_ENABLED=1
 
@@ -36,7 +36,7 @@ install:
         libpcap-dev \
         gcc-multilib \
         g++-multilib \
-        && sudo -E ./travis/travis_pfring.sh
+        && sudo -E ./script/install_pfring.sh
     fi
 
 before_script:
