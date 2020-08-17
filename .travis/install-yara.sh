@@ -21,8 +21,8 @@ GREEN="\e[32m"
 RESET="\e[0m"
 
 YARA_PATH=$(mktemp -d -t yara-XXXXX)
-YARA_SRC=${YARA_PATH}/src
-YARA_PREFIX=${YARA_PATH}/dst
+YARA_SRC=/usr/local/src/yara
+YARA_PREFIX=/usr/local/yara
 
 function downloadYara() {
     if [ $# -eq 1 ]; then
@@ -97,8 +97,6 @@ function compileYara() {
         echo -e "\n\t[+] Make install: ${GREEN} OK ${RESET}"
     fi
 
-    export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${YARA_PREFIX}/lib/pkgconfig"
-    echo -e "\t[+] Exported PKG_CONFIG_PATH:${PKG_CONFIG_PATH}"
     echo "[*] Yara compiled successfully"
 }
 

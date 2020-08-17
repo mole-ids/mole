@@ -48,8 +48,7 @@ before_script:
 script:
   - >
     if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
-      echo "PKG_CONFIG_PATH:$PKG_CONFIG_PATH"
-      echo "$(pkg-config --cflags  -- yara)"
+      export PKG_CONFIG_PATH="/usr/local/yara/lib/pkgconfig"
       make test-race
     fi
 
