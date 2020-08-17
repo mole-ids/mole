@@ -98,6 +98,7 @@ function compileYara() {
     fi
 
     export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${YARA_PREFIX}/lib/pkgconfig"
+    echo -e "\t[+] Exported PKG_CONFIG_PATH:${PKG_CONFIG_PATH}"
     echo "[*] Yara compiled successfully"
 }
 

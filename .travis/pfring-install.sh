@@ -18,7 +18,7 @@ if [ "$TRAVIS_OS_NAME" = "linux" ]; then
     set -ex
 
     cwd=$(pwd)
-    cd /tmp
+    cd $(mktemp -d)
 
     wget http://apt-stable.ntop.org/`lsb_release -r | cut -f2`/all/apt-ntop-stable.deb
     sudo dpkg -i apt-ntop-stable.deb
