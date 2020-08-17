@@ -5,6 +5,8 @@ go 1.14
 require (
 	github.com/google/gopacket v1.1.18
 	github.com/hillu/go-yara/v4 v4.0.2
+	github.com/k0kubun/pp v3.0.1+incompatible
+	github.com/karalabe/xgo v0.0.0-20191115072854-c5ccff8648a7 // indirect
 	github.com/oklog/ulid v1.3.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0

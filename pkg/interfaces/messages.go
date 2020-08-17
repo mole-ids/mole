@@ -16,14 +16,17 @@ package interfaces
 import "errors"
 
 const (
-	IfaceNameIsNeededMsg         = "the interface name is needed"
+	IfaceOrFileNameIsNeededMsg   = "the interface or pcap file name is needed"
 	IfaceValidationFaildMsg      = "the interface validation failed, because"
+	PcapFileValidationFaildMsg   = "the pcap filename validation failed, because"
 	InvalidIfaceMsg              = "the interface %s is not valid"
+	InvalidFilenameMsg           = "the pcap filename %s is not valid"
 	InterfaceConfigInitFailedMsg = "interfaces configutation failed, because"
 	InterfacesInitMsg            = "interface intiated successfully"
 	InterfacesListFailedMsg      = "unable to list system interfaces, because"
 	PFRingInitFaildMsg           = "unable to crate new pf_ring object, because"
-	PCAPInitFaildMsg             = "unable to crate new pcap object, because"
+	LiveSnifferFaildMsg          = "unable to open pcap live sniffer, because"
+	OfflineSnifferFaildMsg       = "unable to open pcap offline sniffer, because"
 	SettingBPFFilterFailedMsg    = "unable to set the BPF filter, because"
 	EnablePFRingFailedMsg        = "while enabling PFRing found"
 	PFRingEnabledMsg             = "PFRing enabled successflly"
@@ -31,8 +34,14 @@ const (
 	PCAPInitFailMsg              = "while initiating pcap got"
 	PFRingInitFailMsg            = "while initiating pf_ring got"
 	PFRingNotAvaliableMsg        = "PFRing is not avaliable. Falling down to PCAP sniffer"
+	PcapFileNoExistMsg           = "the PCAP file provided does not exist"
+	IfaceAndPcapFileMsg          = "Mole cannot handle sniffing from pcap file and an interface at the same time"
+	PCAPPFRingMsg                = "PF_Ring cannot be usen when reading offline pcap traffic"
 )
 
 var (
-	ErrIfaceNotProvided = errors.New(IfaceNameIsNeededMsg)
+	ErrIfaceOrFileNotProvided = errors.New(IfaceOrFileNameIsNeededMsg)
+	ErrPcapFileNoExist        = errors.New(PcapFileNoExistMsg)
+	ErrIfaceAndPcapFile       = errors.New(IfaceAndPcapFileMsg)
+	ErrPCAPPFRing             = errors.New(PCAPPFRingMsg)
 )

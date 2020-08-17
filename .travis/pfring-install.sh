@@ -14,28 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cwd=$(pwd)
+if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    set -ex
 
-cd /tmp
+    cwd=$(pwd)
+    cd $(mktemp -d)
 
-git clone https://github.com/ntop/PF_RING.git
-cd PF_RING/kernel/
-make && sudo make install
+    wget http://apt-stable.ntop.org/`lsb_release -r | cut -f2`/all/apt-ntop-stable.deb
+    sudo dpkg -i apt-ntop-stable.deb
+    sudo apt-get update
+    sudo apt-get install -yqq linux-headers-`uname -r` pfring-dkms pfring libpcap-dev
+    sudo modprobe pf_ring
+    sudo modprobe tun
 
-cd ../userland/lib
-./configure --prefix=/usr/local/pfring && make && sudo make install
-
-cd ../libpcap
-./configure --prefix=/usr/local/pfring && make && sudo make install
-
-cd ../tcpdump
-./configure --prefix=/usr/local/pfring && make && sudo make install
-
-sudo ldconfig
-export CGO_LDFLAGS="-L/usr/local/pfring/lib/"
-export CGO_CFLAGS="-I/usr/local/pfring/include/"
-
-sudo modprobe pf_ring
-echo pf_ring | sudo tee -a /etc/modules
-
-cd "$pwd"
+    cd "$cwd"
+fi

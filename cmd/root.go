@@ -16,6 +16,9 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mole-ids/mole/pkg/logger"
@@ -35,6 +38,14 @@ var RootCmd = &cobra.Command{
 	Use:   "",
 	Short: "MOLE IDS",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		if val, err := cmd.Flags().GetBool("version"); err == nil && val {
+			fmt.Printf("%s %s\nBuilt datetime: %s\nBuild Hash: %s\n", AppName, Version, BuildDate, BuildHash)
+			os.Exit(0)
+		} else if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+
 		err := logger.New()
 		if err != nil {
 			fmt.Printf("Err: %s\n", err.Error())
@@ -65,7 +76,6 @@ func init() {
 	// Bind flags to configuration file
 	viper.BindPFlag("logger.log_to", RootCmd.PersistentFlags().Lookup("logTo"))
 	viper.BindPFlag("logger.log_level", RootCmd.PersistentFlags().Lookup("logLevel"))
-
 }
 
 func initConfig() {
@@ -76,7 +86,14 @@ func initConfig() {
 		viper.SetConfigName("mole")
 		viper.SetConfigType("yaml")
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("/etc/mole")
+		switch runtime.GOOS {
+		case "windows":
+			viper.AddConfigPath(filepath.Join(os.Getenv("APPDATA"), "mole-ids"))
+		case "darwin":
+			fallthrough
+		case "linux":
+			viper.AddConfigPath("/etc/mole")
+		}
 	}
 
 	// Read configuration from environment variables
@@ -84,6 +101,6 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("unable to read. %s", err.Error())
+		log.Printf("unable to read %s", err.Error())
 	}
 }

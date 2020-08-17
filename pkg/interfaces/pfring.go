@@ -29,9 +29,16 @@ func init() {
 
 // initPFRing initializes PFRing on the interface defined in the config
 func (iface *Interfaces) initPFRing() (gopacket.PacketDataSource, error) {
-	ring, err := pfring.NewRing(iface.Config.IFace, snapshotLength, pfring.FlagPromisc)
-	if err != nil {
-		return nil, errors.Wrap(err, PFRingInitFaildMsg)
+	var ring *pfring.Ring
+	var err error
+
+	if iface.ifaceSet() {
+		ring, err = pfring.NewRing(iface.Config.IFace, snapshotLength, pfring.FlagPromisc)
+		if err != nil {
+			return nil, errors.Wrap(err, PFRingInitFaildMsg)
+		}
+	} else {
+		return nil, ErrPCAPPFRing
 	}
 
 	// If there is a BPF fitler then apply it

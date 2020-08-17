@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"syscall"
 
 	"github.com/mole-ids/mole/pkg/engine"
@@ -37,7 +38,10 @@ var idsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		logger.New()
+		err := logger.New()
+		if err != nil {
+			fmt.Printf("Err: %s\n", err.Error())
+		}
 	},
 	Run: runIdsCmd,
 }
@@ -45,6 +49,7 @@ var idsCmd = &cobra.Command{
 func init() {
 	// Configure flags arguments
 	idsCmd.Flags().String("iface", "", "Listen on interface")
+	idsCmd.Flags().String("file", "", "PCAP file to read from")
 	idsCmd.Flags().String("rulesDir", "", "Yara Rules directory")
 	idsCmd.Flags().String("rulesIndex", "", "Yara Rules directory")
 	idsCmd.Flags().Bool("pfring", false, "Enable PF Ring on the interface")
@@ -55,6 +60,7 @@ func init() {
 
 	// Bind flags to configuration file
 	viper.BindPFlag("interface.iface", idsCmd.Flags().Lookup("iface"))
+	viper.BindPFlag("interface.file", idsCmd.Flags().Lookup("file"))
 	viper.BindPFlag("interface.pf_ring", idsCmd.Flags().Lookup("pfring"))
 	viper.BindPFlag("interface.bpf", idsCmd.Flags().Lookup("bpf"))
 
@@ -90,8 +96,18 @@ func runIdsCmd(cmd *cobra.Command, args []string) {
 
 // ensureRoot checks whether mole is been running as root usser
 func ensureRoot() {
-	if uid := syscall.Getuid(); uid != 0 {
-		logger.Log.Fatal("you need to be root")
+	switch runtime.GOOS {
+	case "windows":
+		_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+		if err != nil {
+			logger.Log.Fatal("Run Mole as Administrator user")
+		}
+	case "darwin":
+		fallthrough
+	case "linux":
+		if uid := syscall.Getuid(); uid != 0 {
+			logger.Log.Fatal("Run Mole as root user")
 
+		}
 	}
 }

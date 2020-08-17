@@ -15,7 +15,7 @@ package engine
 
 const (
 	MainEventOuterMsg         = "mole"
-	MainEventInnerMsg         = "mole_event"
+	MainEventInnerMsg         = "event"
 	MainEventInitCompletedMsg = "starting mole ids engine"
 	StartMsg                  = "engine is listening for packages"
 	NoMatchFoundMsg           = "unable to find yara rule for proto:%s src:%s sport:%s dst:%s dport:%s"

@@ -1,5 +1,6 @@
 interface:
     iface: ens33
+    file: ./file.pcap
     pf_ring: true
     bpf:
 
