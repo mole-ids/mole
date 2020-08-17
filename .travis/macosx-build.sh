@@ -165,7 +165,7 @@ function compileYara() {
         echo -ne "\n\t[+] Bootstrap: ${GREEN} OK ${RESET}"
     fi
 
-    ERROR=$(./configure --without-crypto --disable-shared --enable-static --prefix="${prefix}" 2>&1 >/dev/null)
+    ERROR=$(./configure CC=gcc --without-crypto --disable-shared --enable-static --prefix="${prefix}" 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
         echo -ne "\n\t${RED}[-] Configure error${RESET}"
         echo ${ERROR}
@@ -206,7 +206,7 @@ function compileLibpcap() {
     echo -n "[*] Configuring and compiling Libpcap for ${os}/${arch}..."
     cd ${LIBPCAP_PATH}
 
-    ERROR=$(./configure --disable-shared --prefix=${prefix} 2>&1 >/dev/null)
+    ERROR=$(./configure CC=gcc --disable-shared --prefix=${prefix} 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
         echo -ne "\n\t${RED}[-] Configure error${RESET}"
         echo ${ERROR}
@@ -255,7 +255,7 @@ GO_LDFLAGS="-w -s -X 'github.com/mole-ids/mole/cmd.AppName=${APPNAME}' -X 'githu
 
 echo -n "[*] Compiling Mole IDS for Darwin amd64..."
 ERROR=$(CGO_ENABLED=1 \
-     \
+        CC=gcc \
         PKG_CONFIG_PATH="${YARA_64_PREFIX}/lib/pkgconfig:${LIBPCAP_64_PREFIX}/lib/pkgconfig:$(brew --prefix openssl)/lib/pkgconfig" \
         go build -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH} main.go 2>&1 >/dev/null)
 if [ $? -ne 0 ]; then
