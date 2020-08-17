@@ -49,7 +49,7 @@ script:
   - >
     if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
       export PKG_CONFIG_PATH="/usr/local/yara/lib/pkgconfig"
-      make test-race
+      make test-race-static
     fi
 
 before_deploy:
