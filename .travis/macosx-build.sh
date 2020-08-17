@@ -49,6 +49,9 @@ RED="\e[31m"
 GREEN="\e[32m"
 RESET="\e[0m"
 
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+
 function cleanUp() {
     echo -n "[*] Cleaning up the build pipeline..."
     ERROR=$(rm -rf ${BASE_PATH} 2>&1 >/dev/null)
