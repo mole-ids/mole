@@ -30,17 +30,13 @@ function downloadYara() {
     YARA_GIT=https://github.com/VirusTotal/yara.git
 
     echo -n "[*] Cloning Yara v${YARA_VER} into ${YARA_PATH}..."
-    if [ -d "${YARA_PATH}" ]; then
-        echo -e "${GREEN} OK ${RESET} (directory exists)"
+    ERROR=$(git clone ${YARA_GIT} ${YARA_PATH} 2>&1 >/dev/null)
+    if [ $? -ne 0 ]; then
+        echo -e "\n\t${RED}[-] Cloning Yara failed.${RESET}"
+        echo ${ERROR}
+        exit 1
     else
-        ERROR=$(git clone ${YARA_GIT} ${YARA_PATH} 2>&1 >/dev/null)
-        if [ $? -ne 0 ]; then
-            echo -e "\n\t${RED}[-] Cloning Yara failed.${RESET}"
-            echo ${ERROR}
-            exit 1
-        else
-            echo -e "${GREEN} OK ${RESET}"
-        fi
+        echo -e "${GREEN} OK ${RESET}"
     fi
 
     echo -n "[*] Checking out Yara version v$YARA_VER..."
