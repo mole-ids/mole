@@ -21,6 +21,8 @@ GREEN="\e[32m"
 RESET="\e[0m"
 
 YARA_PATH=$(mktemp -d -t yara-XXXXX)
+YARA_SRC=${YARA_PATH}/src
+YARA_PREFIX=${YARA_PATH}/dst
 
 function downloadYara() {
     if [ $# -eq 1 ]; then
@@ -29,8 +31,8 @@ function downloadYara() {
 
     YARA_GIT=https://github.com/VirusTotal/yara.git
 
-    echo -n "[*] Cloning Yara v${YARA_VER} into ${YARA_PATH}..."
-    ERROR=$(git clone ${YARA_GIT} ${YARA_PATH} 2>&1 >/dev/null)
+    echo -n "[*] Cloning Yara v${YARA_VER} into ${YARA_SRC}..."
+    ERROR=$(git clone ${YARA_GIT} ${YARA_SRC} 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
         echo -e "\n\t${RED}[-] Cloning Yara failed.${RESET}"
         echo ${ERROR}
@@ -40,7 +42,7 @@ function downloadYara() {
     fi
 
     echo -n "[*] Checking out Yara version v$YARA_VER..."
-    cd ${YARA_PATH}
+    cd ${YARA_SRC}
 
     ERROR=$(git checkout v${YARA_VER} 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
@@ -54,7 +56,7 @@ function downloadYara() {
 
 function compileYara() {
     echo -n "[*] Bootstraping, configuring, and compiling Yara..."
-    cd ${YARA_PATH}
+    cd ${YARA_SRC}
 
     ERROR=$(./bootstrap.sh 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
@@ -65,7 +67,10 @@ function compileYara() {
         echo -ne "\n\t[+] Bootstrap: ${GREEN} OK ${RESET}"
     fi
 
-    ERROR=$(./configure --without-crypto --disable-shared --enable-static 2>&1 >/dev/null)
+    ERROR=$(./configure --without-crypto \
+            --disable-shared \
+            --enable-static \
+            --prefix=${YARA_PREFIX} 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
         echo -ne "\n\t${RED}[-] Configure error${RESET}"
         echo ${ERROR}
@@ -92,6 +97,7 @@ function compileYara() {
         echo -e "\n\t[+] Make install: ${GREEN} OK ${RESET}"
     fi
 
+    export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${YARA_PREFIX}/lib/pkgconfig"
     echo "[*] Yara compiled successfully"
 }
 
