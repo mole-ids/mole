@@ -251,10 +251,11 @@ cd ${MOLE_PATH}
 
 GOOS=darwin
 GOARCH=amd64
-GO_LDFLAGS="-w -s -X 'github.com/mole-ids/mole/cmd.AppName=${APPNAME}' -X 'github.com/mole-ids/mole/cmd.Version=${VERSION}' -X 'github.com/mole-ids/mole/cmd.BuildDate=${BUILDDATE}' -X 'github.com/mole-ids/mole/cmd.BuildHash=${BUILD}' -extldflags '-static'"
+GO_LDFLAGS="-w -s -X 'github.com/mole-ids/mole/cmd.AppName=${APPNAME}' -X 'github.com/mole-ids/mole/cmd.Version=${VERSION}' -X 'github.com/mole-ids/mole/cmd.BuildDate=${BUILDDATE}' -X 'github.com/mole-ids/mole/cmd.BuildHash=${BUILD}'"
 
 echo -n "[*] Compiling Mole IDS for Darwin amd64..."
 ERROR=$(CGO_ENABLED=1 \
+     \
         PKG_CONFIG_PATH="${YARA_64_PREFIX}/lib/pkgconfig:${LIBPCAP_64_PREFIX}/lib/pkgconfig:$(brew --prefix openssl)/lib/pkgconfig" \
         go build -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH} main.go 2>&1 >/dev/null)
 if [ $? -ne 0 ]; then

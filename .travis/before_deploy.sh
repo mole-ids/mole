@@ -31,10 +31,6 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         if [ x"$TRAVIS_OS_NAME" = x"osx" ]; then
             bash .travis/macosx-build.sh
         fi
-
-        if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
-            sha256sum build/mole* > build/mole_sha256_checksum.txt
-        fi        
     fi
 
     if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
