@@ -92,6 +92,9 @@ function compileYara() {
         echo -e "\n\t[+] Make install: ${GREEN} OK ${RESET}"
     fi
 
+    echo "/usr/local/lib" >> /etc/ld.so.conf
+    ldconfig
+
     echo "[*] Yara compiled successfully"
 }
 
