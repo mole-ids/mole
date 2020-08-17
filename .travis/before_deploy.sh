@@ -27,11 +27,13 @@ if ! [ "$BEFORE_DEPLOY_RUN" ]; then
         echo 
         if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
             bash .travis/docker-xbuild.sh
-            sha256sum build/mole_{linux,windows}* >> build/mole_sha256_checksum.txt
         fi
         if [ x"$TRAVIS_OS_NAME" = x"osx" ]; then
             bash .travis/macosx-build.sh
-            shasum -a 256 -b build/mole_darwin* >> build/mole_sha256_checksum.txt
+        fi
+
+        if [ x"$TRAVIS_OS_NAME" = x"linux" ]; then
+            sha256sum build/mole* > build/mole_sha256_checksum.txt
         fi        
     fi
 

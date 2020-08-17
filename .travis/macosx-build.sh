@@ -239,7 +239,7 @@ function compileLibpcap() {
     echo "[*] Libpcap ${os}/${arch} compiled successfully"
 }
 
-installDeps
+# installDeps
 
 downloadYara "$YARA_VER"
 downloadLibpcap "$LIBPCAP_VER"
