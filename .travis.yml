@@ -38,6 +38,12 @@ install:
         && sudo -E ./.travis/pfring-install.sh \
         && sudo -E ./.travis/install-yara.sh
     fi
+  - >
+    if [ x"$TRAVIS_OS_NAME" = x"osx" ]; then
+      if [ -z $TRAVIS_TAG ]; then
+        exit 0
+      fi
+    fi
 
 before_script:
   - >
