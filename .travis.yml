@@ -68,7 +68,7 @@ deploy:
     local_dir: site
     skip_cleanup: true
     on:
-      condition: $TRAVIS_OS_NAME = linux
+      condition: "$TRAVIS_OS_NAME = linux"
       repo: mole-ids/mole
       all_branches: true
   
