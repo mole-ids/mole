@@ -64,6 +64,7 @@ function buildWindows() {
     cd ${MOLE_HOME}
 
     go build -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH}.exe main.go
+    sha256sum build/mole_${GOOS}_${GOARCH}.exe > build/mole_${GOOS}_${GOARCH}.sha256
 }
 
 function buildLinux() {
@@ -75,6 +76,7 @@ function buildLinux() {
     cd ${MOLE_HOME}
     
     go build -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH} main.go
+    sha256sum build/mole_${GOOS}_${GOARCH} > build/mole_${GOOS}_${GOARCH}.sha256
 }
 
 function buildLinuxPFring() {

@@ -256,12 +256,13 @@ GO_LDFLAGS="-w -s -X 'github.com/mole-ids/mole/cmd.AppName=${APPNAME}' -X 'githu
 echo -n "[*] Compiling Mole IDS for Darwin amd64..."
 ERROR=$(CGO_ENABLED=1 \
         PKG_CONFIG_PATH="${YARA_64_PREFIX}/lib/pkgconfig:${LIBPCAP_64_PREFIX}/lib/pkgconfig:$(brew --prefix openssl)/lib/pkgconfig" \
-        go build -x -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH} main.go 2>&1 >/dev/null)
+        go build -race -ldflags="${GO_LDFLAGS}" -o build/mole_${GOOS}_${GOARCH} main.go 2>&1 >/dev/null)
 if [ $? -ne 0 ]; then
     echo -e "\n\t${RED}[-] MoleIDS compile error.${RESET}"
     echo ${ERROR}
     cleanUp
     exit 1
 else
+    shasum -a 256 -b build/mole_${GOOS}_${GOARCH} > build/mole_${GOOS}_${GOARCH}.sha256
     echo -e "\n\t[+] MoleIDS compilation: ${GREEN} OK ${RESET}"
 fi
