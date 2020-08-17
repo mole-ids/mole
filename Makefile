@@ -48,9 +48,6 @@ test:
 test-race:
 	go test -race -v -count=1 ./...
 
-test-race-static:
-	go test -race -ldflags="-extldflags '-static'" -v -count=1 ./...
-
 test-cover:
 	go test -v -count=1 -cover -coverprofile=${COVER_PROFILE} ./...
 

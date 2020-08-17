@@ -20,9 +20,7 @@ RED="\e[31m"
 GREEN="\e[32m"
 RESET="\e[0m"
 
-YARA_PATH=$(mktemp -d -t yara-XXXXX)
 YARA_SRC=/usr/local/src/yara
-YARA_PREFIX=/usr/local/yara
 
 function downloadYara() {
     if [ $# -eq 1 ]; then
@@ -67,10 +65,7 @@ function compileYara() {
         echo -ne "\n\t[+] Bootstrap: ${GREEN} OK ${RESET}"
     fi
 
-    ERROR=$(./configure --without-crypto \
-            --disable-shared \
-            --enable-static \
-            --prefix=${YARA_PREFIX} 2>&1 >/dev/null)
+    ERROR=$(./configure --without-crypto 2>&1 >/dev/null)
     if [ $? -ne 0 ]; then
         echo -ne "\n\t${RED}[-] Configure error${RESET}"
         echo ${ERROR}
