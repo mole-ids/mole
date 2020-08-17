@@ -31,7 +31,6 @@ install:
         bison \
         flex \
         make \
-        libyara-dev \
         libssl-dev \
         libpcap-dev \
         gcc-multilib \
