@@ -20,7 +20,7 @@ RED="\e[31m"
 GREEN="\e[32m"
 RESET="\e[0m"
 
-YARA_PATH=$(mktemp -d)
+YARA_PATH=$(mktemp -d -t yara-XXXXX)
 
 function downloadYara() {
     if [ $# -eq 1 ]; then
@@ -99,5 +99,5 @@ function compileYara() {
     echo "[*] Yara compiled successfully"
 }
 
-downloadYara v4.0.2
+downloadYara 4.0.2
 compileYara
