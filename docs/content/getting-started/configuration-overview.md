@@ -13,9 +13,10 @@ Although, you can also define the `mole.yml` location using the command line
 flag `--config <path>`.
 
 !!! example "Mole IDS configuration falg"
-    ```shell
+
+  ```shell
     ./mole --config <path_to_mole.yml> ids --iface ens33
-    ```
+  ```
 
 At the moment the configuration file is splited up in four sections:
 
@@ -71,7 +72,6 @@ rules:
 If you are wondering yourself how to use the variables, I'll show you down below,
 but if you want to know more about rules, pleae go to
 [writing rules](/writing-rules/) section.
-
 
 ```yara
 rule ExampleRule {

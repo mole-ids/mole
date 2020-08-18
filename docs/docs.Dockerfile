@@ -6,5 +6,5 @@ COPY requirements.txt /mkdocs/
 WORKDIR /mkdocs
 VOLUME /mkdocs
 
-RUN apk --no-cache --no-progress add musl-dev gcc python3-dev py3-pip \
+RUN apk --no-cache --no-progress add py3-pip \
   && pip3 install --user -r requirements.txt

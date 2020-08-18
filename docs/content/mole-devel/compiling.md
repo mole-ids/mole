@@ -27,6 +27,7 @@ everything will be fine.
 The following packages are needed to compile Yara and PF_RING.
 
 ??? example "Install build dependencies"
+
     ```shell tab="Debian/Ubuntu"
     sudo apt install build-essential \
                     pkg-config \
@@ -48,20 +49,21 @@ The following packages are needed to compile Yara and PF_RING.
 ### Install Golang
 
 ??? example "Install Golang from package repository"
-   ```shell tab="Ubuntu"
+
+    ```shell tab="Ubuntu"
     sudo add-apt-repository ppa:longsleep/golang-backports
     sudo apt update
     sudo apt install golang-go
-   ```
+    ```
 
-   ```shell tab="Debian"
+    ```shell tab="Debian"
     sudo apt update
     sudo apt install golang-go
-   ```
+    ```
 
-   ```shell tab="MacOS X"
+    ```shell tab="MacOS X"
     brew install golang
-   ```
+    ```
 
 ??? tldr "Install Golang manually"
     Golang can be downlaoded from [https://golang.org/dl/](https://golang.org/dl/)
@@ -74,7 +76,8 @@ The following packages are needed to compile Yara and PF_RING.
 
 PF_RING has 3 parts that need to be compiled and installed separately.
 
-**PF_Ring is only avaliable for Linux**
+!!! note About PF_Ring
+    PF_Ring is only avaliable for Linux
 
 ```shell
 tmp=$(mktemp -d -t pf_ring-XXXXXX)
@@ -97,7 +100,8 @@ source $HOME/.bash_profile
 
 #### Load PF_RING
 
-**PF_Ring is only avaliable for Linux**
+!!! note About PF_Ring
+    PF_Ring is only avaliable for Linux
 
 ```shell
 sudo modprobe pf_ring
